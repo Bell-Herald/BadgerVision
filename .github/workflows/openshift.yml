@@ -25,8 +25,8 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        docker build --pull --rm -f "rtmp-server/DOCKERFILE" -t ghcr.io/rahulhi/rtmp-server:latest "rtmp-server"
-        docker push ghcr.io/rahulhi/rtmp-server:latest
+        docker build --pull --rm -f "rtmp-server/DOCKERFILE" -t ghcr.io/maxmaeder/rtmp-server:latest "rtmp-server"
+        docker push ghcr.io/maxmaeder/rtmp-server:latest
 
     - name: Install OpenShift CLI
       run: |
@@ -52,7 +52,7 @@ jobs:
     - name: Create deployment if it does not exist
       if: env.deployment_exists == 'false'
       run: |
-        oc new-app --name=rtmp-server-deployment ghcr.io/rahulhi/rtmp-server:latest
+        oc new-app --name=rtmp-server-deployment ghcr.io/maxmaeder/rtmp-server:latest
         oc set resources deployment rtmp-server-deployment --limits=cpu=500m,memory=512Mi --requests=cpu=250m,memory=256Mi
         oc set probe deployment/rtmp-server-deployment --liveness --get-url=http://:8080/health --initial-delay-seconds=30 --timeout-seconds=1
         oc set probe deployment/rtmp-server-deployment --readiness --get-url=http://:8080/ready --initial-delay-seconds=5 --timeout-seconds=1
@@ -60,7 +60,7 @@ jobs:
     - name: Update deployment image
       if: env.deployment_exists == 'true'
       run: |
-        oc set image deployment/rtmp-server-deployment rtmp-server-container=ghcr.io/rahulhi/rtmp-server:latest
+        oc set image deployment/rtmp-server-deployment rtmp-server-container=ghcr.io/maxmaeder/rtmp-server:latest
 
     - name: Expose service
       run: |
