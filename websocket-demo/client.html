@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Socket.IO chat</title>
+    <style>
+      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
+      #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
+      #input:focus { outline: none; }
+      #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
+
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages > li { padding: 0.5rem 1rem; }
+      #messages > li:nth-child(odd) { background: #efefef; }
+    </style>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+    <form id="form" action="">
+      <input id="input" autocomplete="off" /><button>Send</button>
+    </form>
+  </body>
+</html>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const socket = io('http://localhost:5000');
+  //var socket = new io.Socket();
+  //socket.connect('http://' + ipAddress + ':' + port);
+  //socket.connect('http://localhost:5000')
+
+
+  
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
+
+  const client = ZoomVideo.createClient();
+
+  client.init('en-US', 'CDN');
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (input.value) {
+      socket.emit('chat-to-server-message', input.value);
+      input.value = '';
+    }
+  });
+
+  socket.on('chat-to-clinet-message', (msg) => {
+    const item = document.createElement('li');
+    item.textContent = msg;
+    messages.appendChild(item);
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+
+//Catches zoom initialization request for Connection Protocol for QR: display link to pinata file
+
+  socket.on('zoom_initialization', (session_name) => {
+    console.log("TODO: do something here for zoom initialization")
+  });
+
+  socket.on('face_recognized', (tone) => {
+    console.log("TODO: play tone", tone);
+  });
+
+  socket.on("zoom_initialization", (signature) => {
+    client.join(signature, 'Session Name', 'Your User ID').then(() => {
+      console.log('Successfully joined Zoom session');
+    }).catch((error) => {
+      console.error('Failed to join Zoom session', error);
+    });
+  });
+
+  socket.onAny((eventName, ...args) => {
+    console.log("input recieved")
+    console.log(eventName); // 'hello'
+    console.log(args); // [ 1, '2', { 3: '4', 5: ArrayBuffer (1) [ 6 ] } ]
+  });
+
+  
+
+</script>
