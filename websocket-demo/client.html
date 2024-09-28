@@ -36,6 +36,10 @@
   const form = document.getElementById('form');
   const input = document.getElementById('input');
 
+  const client = ZoomVideo.createClient();
+
+  client.init('en-US', 'CDN');
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     if (input.value) {
@@ -53,24 +57,28 @@
 
 //Catches zoom initialization request for Connection Protocol for QR: display link to pinata file
 
-  socket.on('zoom_initialization', session_name)
-    session_name = None    
-    /*qr = qrcode.QRCode(version=3, box_size=20, border=10, error_correction=qrcode.constants.ERROR_CORRECT_H)
-    qr.add_data(socketio_Url) //WHICH URL??
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    img.save("qr_code.png") //Send this image over
-    */
-    sio.emit('zoom_confirmation', {'data': '{ "zoom_Jwt": "{zoom_Jwt}", "socketio_Url": "{socketio_Url}"}'})
+  socket.on('zoom_initialization', (session_name) => {
+    console.log("TODO: do something here for zoom initialization")
+  });
 
-    print("do something here for zoom initialization")
+  socket.on('face_recognized', (tone) => {
+    console.log("TODO: play tone", tone);
+  });
 
+  socket.on("zoom_initialization", (signature) => {
+    client.join(signature, 'Session Name', 'Your User ID').then(() => {
+      console.log('Successfully joined Zoom session');
+    }).catch((error) => {
+      console.error('Failed to join Zoom session', error);
+    });
+  });
 
   socket.onAny((eventName, ...args) => {
     console.log("input recieved")
     console.log(eventName); // 'hello'
     console.log(args); // [ 1, '2', { 3: '4', 5: ArrayBuffer (1) [ 6 ] } ]
   });
+
   
 
 </script>

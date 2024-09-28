@@ -2,6 +2,8 @@ import socketio
 import eventlet
 import json
 import qrcode
+import datetime
+import jwt
 
 
 ###Initialize server
@@ -23,8 +25,11 @@ def chat_to_server_event(sid, data):
 #Catches connect
 @sio.event
 def connect(sid, environ, auth):
-    session_name = None
     print('EVENT: connect | ID:', sid)
+
+    # Get unique session name through date and time
+    current_datetime = datetime.now()
+    session_name = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
 
 #    qr = qrcode.QRCode(version=3, box_size=20, border=10, error_correction=qrcode.constants.ERROR_CORRECT_H)
 #    qr.add_data(socketio_Url) #WHICH URL??
@@ -34,6 +39,23 @@ def connect(sid, environ, auth):
 
     #Send zoom information
     #TODO: Initializae zoom_Jwt
+
+
+    ZOOM_SDK_KEY = 'your_sdk_key'
+    ZOOM_SDK_SECRET = 'your_sdk_secret'
+    iat = int(time.time())
+    exp = iat + 60 * 5  # Signature expires in 5 minutes
+    payload = {
+        'sdkKey': ZOOM_SDK_KEY,
+        'mn': '',  # Session name/meeting number
+        'role': 1,  # Host role
+        'iat': iat,
+        'exp': exp,
+        'appKey': ZOOM_SDK_KEY,
+        'tokenExp': exp
+    }
+    token = jwt.encode(payload, ZOOM_SDK_SECRET, algorithm='HS256')
+
     sio.emit('zoom_initialization', {'data': session_name})
 
 #Catches disconnect
@@ -71,4 +93,10 @@ def any_event(event, sid, data):
 
 if __name__ == '__main__':
     eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
+
+
+"""
+When a face is recognized:
+    sio.emit('face_recognized', {'data': TONE})
+"""
 
