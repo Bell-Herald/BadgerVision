@@ -12,6 +12,7 @@ import theme from "./constants/theme";
 import ActionView from "./views/ActionView";
 import ManageView from "./views/ManageView";
 import IdentifyView from "./views/IdentifyView";
+import AddFaceView from "./views/AddFaceView";
 
 export type SessionDetails = {
   zoomSessionName: string;
@@ -19,17 +20,27 @@ export type SessionDetails = {
   websocketUrl: string;
 };
 
+export type ManagePeopleProps = {
+  websocketUrl: string;
+};
+
+export type AddFaceProps = {
+  websocketUrl: string;
+};
+
 export type IdentifyViewProps = {
   zoomSessionName: string;
   zoomJwt: string;
+  websocketUrl: string;
 };
 
 export type RootStackParamList = {
   Home: undefined;
   "Scan Code": undefined;
   "Choose Action": SessionDetails;
-  "Manage People": undefined;
+  "Manage People": ManagePeopleProps;
   "Identify People": IdentifyViewProps;
+  "Add Face": AddFaceProps;
 };
 
 export default function App() {
@@ -50,6 +61,7 @@ export default function App() {
             <Stack.Screen name="Choose Action" component={ActionView} />
             <Stack.Screen name="Manage People" component={ManageView} />
             <Stack.Screen name="Identify People" component={IdentifyView} />
+            <Stack.Screen name="Add Face" component={AddFaceView} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

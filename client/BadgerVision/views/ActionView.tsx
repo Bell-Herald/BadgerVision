@@ -32,14 +32,18 @@ const ActionView = ({
     <View style={styles.container}>
       <Button
         mode="contained-tonal"
-        onPress={() => navigation.navigate("Manage People")}
+        onPress={() => navigation.navigate("Manage People", { websocketUrl })}
       >
         Manage People
       </Button>
       <Button
         mode="contained-tonal"
         onPress={() =>
-          navigation.navigate("Identify People", { zoomSessionName, zoomJwt })
+          navigation.navigate("Identify People", {
+            zoomSessionName,
+            zoomJwt,
+            websocketUrl,
+          })
         }
       >
         Run Identification

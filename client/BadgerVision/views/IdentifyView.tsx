@@ -4,11 +4,7 @@ import { RootStackParamList } from "../App";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useRef, useState } from "react";
 import WebView from "react-native-webview";
-
-type CallViewProps = {
-  zoomSessionName: string;
-  zoomJwt: string;
-};
+import { playToneListener } from "../server";
 
 const styles = StyleSheet.create({
   container: {
@@ -21,7 +17,7 @@ const styles = StyleSheet.create({
 const IdentifyView = ({
   route,
 }: NativeStackScreenProps<RootStackParamList, "Identify People">) => {
-  const { zoomSessionName, zoomJwt } = route.params;
+  const { zoomSessionName, zoomJwt, websocketUrl } = route.params;
 
   const identityPageUrl = `https://badgervision-5a9a2.web.app/?sessionName=${zoomSessionName}&jwt=${zoomJwt}`;
 
