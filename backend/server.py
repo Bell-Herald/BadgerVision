@@ -14,7 +14,14 @@ import numpy as np
 port = "3000"
 ip_address = "162.243.166.134"
 
-sio = socketio.SimpleClient()
+sio = socketio.Client()
+
+RTMP_URL = None
+mapping = {} #Stores encodings
+
+storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
+recent_faces = {} #dict of captures and their time made in the last storage_refresh_minutes
+recent_emotions = {} #dict of emotions recognized in the last storage_refresh_minutes
 
 ###Initialize server
 # create a Socket.IO server
@@ -53,23 +60,21 @@ def face_added(sid, data):
     
     print("TODO: save face to Pinata here")
 
+
+#Create an RTMP_Listener after hearing back from the client
+@sio.on('session_name')
+def initiate_RTMP_from_session_name(sid, name):
+    RTMP_URL = "rtmp://162.243.166.134:1935/live/{name}" #I think extra configs needed in nginx.conf
+    cap = cv2.VideoCapture(RTMP_URL)
+    print("got caputre")
+    caputure_from_video(cap)
+
+
 #Catches other event that was not already caught
 @sio.on('*')
 def any_event(event, sid, data):
      print('EVENT::', event, "| ID:", sid, "| DATA:", data)
      pass
-
-RTMP_URL = "rtmp://162.243.166.134:1935/live/test" #I think extra configs needed in nginx.conf
-
-mapping = {} #Stores encodings
-
-storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
-recent_faces = {} #dict of captures and their time made in the last storage_refresh_minutes
-recent_emotions = {} #dict of emotions recognized in the last storage_refresh_minutes
-
-cap = cv2.VideoCapture(RTMP_URL)
-
-print("got caputre")
 
 def play_tone(face_encoding):
     #print("PLAYing tone:", face_encoding)
@@ -88,9 +93,8 @@ def check_if_in_mapping(face_encoding):
 
     return False
 
-def caputure_from_video():
+def caputure_from_video(cap):
     name = ""#Where is name coming from??
-    process_this_frame = 0
     frame_skips = 100 #Use (1/frame_skips) frames; ex) 1/3 skips 2 of 3 frames
     frame_count = 0
     while cap.isOpened():  # Untill end of file/error occured
@@ -163,8 +167,5 @@ def caputure_from_video():
 
 if __name__ == "__main__":
     print("STEP 1")
-    caputure_from_video()
-    print("STEP 2")
     sio.connect('http://' + ip_address + ':' + port)
-#    eventlet.wsgi.server(eventlet.listen(('', 4000)), app)
-    print("Server started")
+    print("CS2 UP")
