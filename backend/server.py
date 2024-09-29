@@ -3,18 +3,12 @@ import socketio
 import eventlet
 import json
 import time
-import jwt
 import session_backend
 import cv2
 from deepface import DeepFace
 import face_recognition
 from PIL import Image as im
 import time
-import qrcode
-import base64
-import io
-import os
-import pinata
 import numpy as np
 
 
@@ -25,34 +19,7 @@ sio = socketio.Server(cors_allowed_origins='*')  # Allow requests from any origi
 # wrap with a WSGI application
 app = socketio.WSGIApp(sio)
 
-PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI1NjBhZTI4MC1lOWUyLTQ2YzctYjczZS1hOTc4MWY5ZjBkZjUiLCJlbWFpbCI6Im1heC5zLm1hZWRlckBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiNTMyZjRkM2M5MDYzYTEzNjM2MWMiLCJzY29wZWRLZXlTZWNyZXQiOiJlMjM5YWYxMzNiMzNhMWU0ZjVmNDkyYjgzMGM3YjlkZmZlODQwNTk3MTM4OGFlZDY2YWYyZGM2N2E1MmMxNGMzIiwiZXhwIjoxNzU5MTEzNzAyfQ.D8hJHBL4KFHEqdg8_eO88v9RTn38X_WtC9970_STF84"
-pinata_config = {
-    "pinataJwt": PINATA_JWT,  # Replace with your actual Pinata JWT
-}
-
 ###Listen to events
-
-def upload_file_to_pinata(file_path):
-    try:
-        # Call the upload_file function we defined earlier
-        response = pinata.upload_file(
-            pinata_config,
-            file_path
-        )
-
-        # Output the response from Pinata
-        print("Upload successful! IPFS Hash:", response.get("IpfsHash"))
-        print("Full Response:", response)
-        return response
-
-    except pinata.PinataError as e:
-        print(f"Error during file upload: {e}")
-
-    finally:
-        # Clean up the test file after uploading
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            print(f"Test file '{file_path}' has been deleted.")
 
 
 #Catches custom eventpip install --upgrade setuptools
@@ -60,90 +27,6 @@ def upload_file_to_pinata(file_path):
 def chat_to_server_event(sid, data):
     print("EVENT: chat_to_server_event | ID:", sid, "| DATA:", data)
     sio.emit('my event', {'data': 'foobar'})
-
-@sio.on('update_livestream')
-def update_livestream_event(sid, data):
-    session_id = data.get('session_id')
-    stream_url = data.get('stream_url')
-    stream_key = data.get('stream_key')
-    page_url = data.get('page_url')
-
-    if session_id and stream_url and stream_key and page_url:
-        session_backend.update_livestream(session_id, stream_url, stream_key, page_url)
-        sio.emit('livestream_updated', {'session_id': session_id})
-    else:
-        sio.emit('livestream_update_failed', {'error': 'Missing required fields'})
-
-# Catch event to start live stream
-@sio.on('start_livestream')
-def start_livestream_event(sid, data):
-    session_id = data.get('session_id')
-    stream_url = data.get('stream_url')
-    stream_key = data.get('stream_key')
-    page_url = data.get('page_url')
-
-    if session_id and stream_url and stream_key and page_url:
-        session_backend.update_livestream_status(session_id, stream_url, stream_key, page_url)
-        sio.emit('livestream_started', {'session_id': session_id})
-    else:
-        sio.emit('livestream_start_failed', {'error': 'Missing required fields'})
-
-#Catches connect
-@sio.event
-def connect(sid, environ, auth):
-    print('EVENT: connect | ID:', sid)
-
-    # Get unique session name through date and time
-    session_id, session_name = session_backend.create_session()
-
-    # https://developers.zoom.us/docs/video-sdk/auth/#how-to-generate-a-video-sdk-jwt
-    ZOOM_SDK_KEY = 'YLfqZ1zkO5UCcVBhuqKcYzXUZunSp5ZbKg3q'
-    ZOOM_SDK_SECRET = 'oYO7shH2XAk6X8hllehPI3VX74k45676Fl4t'
-    iat = int(time.time())
-    exp = iat + 60 * 5  # Signature expires in 5 minutes
-    payload = {
-        'app_key': ZOOM_SDK_KEY,
-        'role_type': 1,
-        'tpc': session_name,
-        'version': 1,
-        'iat': iat,
-        'exp': exp,
-    }
-    token = session_backend.create_jwt(session_name=session_name)
-
-    data = {
-        "session_name": session_name,
-        "session_id": session_id,
-        "zoomJwt": token,
-        "websocketURL": "http://localhost:4000"
-    }
-
-    with open('data.json', 'w') as f:
-        json.dump(data, f)
-    
-    response = upload_file_to_pinata("data.json")
-    
-    print(response)
-
-    # Assuming 'id' is in the response
-    session_id_from_response = response['data']['cid']
-
-    print(session_id_from_response)
-    # Generate QR code
-    qr = qrcode.QRCode(version=3, box_size=20, border=10, error_correction=qrcode.constants.ERROR_CORRECT_H)
-    qr.add_data(session_id_from_response)
-    qr.make(fit=True)
-    # Convert the QR code to an image in memory
-    img = qr.make_image(fill_color="black", back_color="white")
-
-    img.save("qr_code.png") 
-
-    # Send the QR code image and session information to the client
-    sio.emit('zoom_initialization', {
-        'token': token,
-        'session_name': session_name,
-        'session_id': session_id,
-    })
 
 #Catches disconnect
 @sio.event
