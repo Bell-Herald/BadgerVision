@@ -1,0 +1,44 @@
+# Use the NGINX Unprivileged base image
+FROM nginxinc/nginx-unprivileged:stable
+
+# Install dependencies for building NGINX
+USER root
+RUN apt-get update && \
+    apt-get install -y \
+    build-essential \
+    libpcre3 \
+    libpcre3-dev \
+    zlib1g \
+    zlib1g-dev \
+    libssl-dev \
+    wget \
+    unzip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and compile NGINX with RTMP module
+RUN wget http://nginx.org/download/nginx-1.22.1.tar.gz && \
+    tar -zxvf nginx-1.22.1.tar.gz && \
+    wget https://github.com/arut/nginx-rtmp-module/archive/master.zip && \
+    unzip master.zip && \
+    cd nginx-1.22.1 && \
+    ./configure --prefix=/etc/nginx --sbin-path=/usr/sbin/nginx --conf-path=/etc/nginx/nginx.conf --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --pid-path=/tmp/nginx.pid --lock-path=/var/run/nginx.lock --with-http_ssl_module --with-http_v2_module --with-http_realip_module --with-http_addition_module --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_auth_request_module --with-http_random_index_module --with-http_secure_link_module --with-http_slice_module --with-http_stub_status_module --with-mail --with-mail_ssl_module --with-stream --with-stream_ssl_module --with-stream_realip_module --with-stream_ssl_preread_module --add-module=../nginx-rtmp-module-master && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf nginx-1.22.1 nginx-1.22.1.tar.gz master.zip nginx-rtmp-module-master
+
+# Copy custom nginx.conf to the container
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Change ownership of nginx.conf to the unprivileged user
+RUN chown 101:101 /etc/nginx/nginx.conf
+
+# Expose RTMP port
+EXPOSE 1935
+
+# Switch to unprivileged user
+USER 101
+
+# Start NGINX
+CMD ["nginx", "-g", "daemon off;"]
