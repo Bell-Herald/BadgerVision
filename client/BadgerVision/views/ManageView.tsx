@@ -1,10 +1,17 @@
 import { View } from "react-native";
-import { Text } from "react-native-paper";
+import { Button, List } from "react-native-paper";
 
 const ManageView = () => {
+  const ManageFace = () => {
+    return <Button>Delete Face</Button>;
+  };
+
   return (
     <View>
-      <Text>Manage View</Text>
+      <List.Section title="Identified Faces">
+        <List.Item title="First item" right={() => <ManageFace />} />
+        <List.Item title="Second item" />
+      </List.Section>
     </View>
   );
 };
