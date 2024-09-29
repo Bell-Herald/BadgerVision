@@ -108,7 +108,7 @@ def connect(sid, environ, auth):
         'iat': iat,
         'exp': exp,
     }
-    token = jwt.encode(payload, ZOOM_SDK_SECRET, algorithm='HS256')
+    token = session_backend.create_jwt()
 
     data = {
         "session_name": session_name,
