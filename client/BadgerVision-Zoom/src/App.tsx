@@ -3,7 +3,7 @@ import VideoCall from "./VideoCall";
 import { StringParam, useQueryParam } from "use-query-params";
 // import { playToneListener } from "./server";
 import { useEffect, useState } from "react";
-import { generateJingle } from "./util/toneGenerator.ts";
+import { generateReducedJingle } from "./util/toneGenerator.ts";
 import { playNameListener, playToneListener } from "./server.ts";
 
 function App() {
@@ -18,13 +18,13 @@ function App() {
 
     // console.log("hi");
     // const tone = Array.from({ length: 128 }, () => Math.random());
-    // generateJingle(tone);
+    // generateReducedJingle(tone);
 
     const url = "162.243.166.134:3000";
 
     playToneListener(url, (res) => {
       console.log("Playing tone", res);
-      generateJingle(res.face_encoding);
+      generateReducedJingle(res.face_encoding);
     });
 
     playNameListener(url, (res) => {
