@@ -99,3 +99,8 @@ def update_livestream_status(session_id, stream_url, stream_key, page_url):
         print("Failed to update live stream")
         print("Status Code:", response.status_code)
         print("Response:", response.text)
+
+if __name__ == "__main__":
+    session_id, session_name = create_session()
+    # update_livestream(session_id, "rtmp://live.twitch.tv/app", "stream_key", "https://www.twitch.tv/")
+    # update_livestream_status(session_id, "rtmp://live.twitch.tv/app", "stream_key", "https://www.twitch.tv/")

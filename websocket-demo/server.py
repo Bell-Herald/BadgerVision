@@ -62,8 +62,8 @@ def connect(sid, environ, auth):
     #TODO: Initializae zoom_Jwt
 
 
-    ZOOM_SDK_KEY = 'your_sdk_key'
-    ZOOM_SDK_SECRET = 'your_sdk_secret'
+    ZOOM_SDK_KEY = 'YLfqZ1zkO5UCcVBhuqKcYzXUZunSp5ZbKg3q'
+    ZOOM_SDK_SECRET = 'oYO7shH2XAk6X8hllehPI3VX74k45676Fl4t'
     iat = int(time.time())
     exp = iat + 60 * 5  # Signature expires in 5 minutes
     payload = {
