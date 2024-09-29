@@ -1,3 +1,4 @@
+
 import socketio
 import eventlet
 import json
@@ -9,6 +10,12 @@ from deepface import DeepFace
 import face_recognition
 from PIL import Image as im
 import time
+import qrcode
+import base64
+import io
+import os
+import pinata
+
 
 ###Initialize server
 # create a Socket.IO server
@@ -18,12 +25,36 @@ sio = socketio.Server(cors_allowed_origins='*')  # Allow requests from any origi
 app = socketio.WSGIApp(sio)
 
 PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI1NjBhZTI4MC1lOWUyLTQ2YzctYjczZS1hOTc4MWY5ZjBkZjUiLCJlbWFpbCI6Im1heC5zLm1hZWRlckBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiNTMyZjRkM2M5MDYzYTEzNjM2MWMiLCJzY29wZWRLZXlTZWNyZXQiOiJlMjM5YWYxMzNiMzNhMWU0ZjVmNDkyYjgzMGM3YjlkZmZlODQwNTk3MTM4OGFlZDY2YWYyZGM2N2E1MmMxNGMzIiwiZXhwIjoxNzU5MTEzNzAyfQ.D8hJHBL4KFHEqdg8_eO88v9RTn38X_WtC9970_STF84"
-PINATA_API_KEY = "532f4d3c9063a136361c"
-PINATA_SECRET_KEY = "e239af133b33a1e4f5f492b830c7b9dffe8405971388aed66af2dc67a52c14c3"
+pinata_config = {
+    "pinataJwt": PINATA_JWT,  # Replace with your actual Pinata JWT
+}
 
 ###Listen to events
 
-#Catches custom event
+def upload_file_to_pinata(file_path):
+    try:
+        # Call the upload_file function we defined earlier
+        response = pinata.upload_file(
+            pinata_config,
+            file_path
+        )
+
+        # Output the response from Pinata
+        print("Upload successful! IPFS Hash:", response.get("IpfsHash"))
+        print("Full Response:", response)
+        return response
+
+    except pinata.PinataError as e:
+        print(f"Error during file upload: {e}")
+
+    finally:
+        # Clean up the test file after uploading
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            print(f"Test file '{file_path}' has been deleted.")
+
+
+#Catches custom eventpip install --upgrade setuptools
 @sio.on('chat-to-server-message')
 def chat_to_server_event(sid, data):
     print("EVENT: chat_to_server_event | ID:", sid, "| DATA:", data)
@@ -89,38 +120,28 @@ def connect(sid, environ, auth):
     with open('data.json', 'w') as f:
         json.dump(data, f)
     
-    pinata = PinataPy(PINATA_API_KEY, PINATA_SECRET_KEY)
-    response_json = pinata.pin_file_to_ipfs("data.json")
+    response = upload_file_to_pinata("data.json")
     
-    print(response_json)
+    print(response)
 
     # Assuming 'id' is in the response
-    session_id_from_response = response_json.get('id')
+    session_id_from_response = response['data']['cid']
 
+    print(session_id_from_response)
     # Generate QR code
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
+    qr = qrcode.QRCode(version=3, box_size=20, border=10, error_correction=qrcode.constants.ERROR_CORRECT_H)
     qr.add_data(session_id_from_response)
     qr.make(fit=True)
-
     # Convert the QR code to an image in memory
-    img = qr.make_image(fill='black', back_color='white')
-    img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format='PNG')
+    img = qr.make_image(fill_color="black", back_color="white")
 
-    # Encode the image to base64
-    img_base64 = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
+    img.save("qr_code.png") 
 
     # Send the QR code image and session information to the client
     sio.emit('zoom_initialization', {
         'token': token,
         'session_name': session_name,
         'session_id': session_id,
-        'qr_code': img_base64  # Send the QR code as a base64 string
     })
 
 #Catches disconnect
@@ -155,7 +176,7 @@ RTMP_URL = "rtmp://162.243.166.134:1935/live/test" #I think extra configs needed
 mapping = [] #Stores encodings
 
 storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
-recent_faces = {} #dict of captures and their time made in the last storage_refresh_minutes
+recent_faces = [] #dict of captures and their time made in the last storage_refresh_minutes
 recent_emotions = {} #dict of emotions recognized in the last storage_refresh_minutes
 
 cap = cv2.VideoCapture(RTMP_URL)
@@ -182,7 +203,7 @@ def check_if_in_mapping(face_encoding):
 def caputure_from_video():
     name = ""#Where is name coming from??
     process_this_frame = 0
-    frame_skips = 100 #Use (1/frame_skips) frames; ex) 1/3 skips 2 of 3 frames
+    frame_skips = 10 #Use (1/frame_skips) frames; ex) 1/3 skips 2 of 3 frames
     frame_count = 0
     while cap.isOpened():  # Untill end of file/error occured
       ret, frame = cap.read()
@@ -210,7 +231,7 @@ def caputure_from_video():
             continue
         
         #Encodings are sorted from left to right
-        face_encodings = sorted(face_encodings, key=lambda x: x.known_face_locations[3])
+        # face_encodings = sorted(face_encodings, key=lambda x: x.known_face_locations[3])
 
         #Play a tone for each unique face if not played recently and record faces
         for face_encoding in face_encodings:
@@ -251,15 +272,18 @@ def caputure_from_video():
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
+    print("STEP 1")
+    eventlet.wsgi.server(eventlet.listen(('', 4000)), app)
+    print("STEP 2")
     caputure_from_video()
+    print("STEP 3")
 
 ###Listen to events
 #@sio.on('update_livestream')
 #def update_livestream_event(sid, data):
 #    session_id = data.get('session_id')
 #    stream_url = data.get('stream_url')
-#    stream_key = data.get('stream_key')
+#    stream_key = data.get('stream_key')pip install --upgrade setuptools
 #    page_url = data.get('page_url')
 #
 #    if session_id and stream_url and stream_key and page_url:
