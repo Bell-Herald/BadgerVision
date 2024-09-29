@@ -40,7 +40,7 @@ def save_mapping_to_json(mapping, file_path):
     with open(file_path, 'w') as file:
         json.dump(data, file)
 
-RTMP_URL = "rtmp://162.243.166.134:1935/live/test"
+RTMP_URL = None
 mapping = load_mapping_from_json("mappings.json") #Stores encodings
 
 storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
