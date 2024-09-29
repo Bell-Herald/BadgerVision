@@ -1,29 +1,58 @@
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
-import { Appbar, Button, PaperProvider } from "react-native-paper";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import {
+  MD3LightTheme as DefaultTheme,
+  PaperProvider,
+} from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { NavigationContainer } from "@react-navigation/native";
+import HomeView from "./views/HomeView";
+import AppNavigationBar from "./components/AppNavigationBar";
+import ScanView from "./views/ScanView";
+import theme from "./constants/theme";
+import ActionView from "./views/ActionView";
+import ManageView from "./views/ManageView";
+import IdentifyView from "./views/IdentifyView";
+
+export type SessionDetails = {
+  zoomSessionName: string;
+  zoomJwt: string;
+  websocketUrl: string;
+};
+
+export type IdentifyViewProps = {
+  zoomSessionName: string;
+  zoomJwt: string;
+};
+
+export type RootStackParamList = {
+  Home: undefined;
+  "Scan Code": undefined;
+  "Choose Action": SessionDetails;
+  "Manage People": undefined;
+  "Identify People": IdentifyViewProps;
+};
 
 export default function App() {
+  const Stack = createNativeStackNavigator<RootStackParamList>();
+
   return (
-    <PaperProvider>
+    <PaperProvider theme={theme}>
       <SafeAreaProvider>
-        <View>
-          <Appbar.Header>
-            <Appbar.Content title="Badger Vision" />
-          </Appbar.Header>
-          <Button mode="contained-tonal">Hi</Button>
-          <Text>Open up App.tsx to st art working on your app!</Text>
-        </View>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="Home"
+            screenOptions={{
+              header: (props) => <AppNavigationBar {...props} />,
+            }}
+          >
+            <Stack.Screen name="Home" component={HomeView} />
+            <Stack.Screen name="Scan Code" component={ScanView} />
+            <Stack.Screen name="Choose Action" component={ActionView} />
+            <Stack.Screen name="Manage People" component={ManageView} />
+            <Stack.Screen name="Identify People" component={IdentifyView} />
+          </Stack.Navigator>
+        </NavigationContainer>
       </SafeAreaProvider>
     </PaperProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
