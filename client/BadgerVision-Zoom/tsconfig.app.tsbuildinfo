@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/videocall.tsx","./src/index.d.ts","./src/main.tsx"],"version":"5.6.2"}
+{"root":["./src/app.tsx","./src/videocall.tsx","./src/index.d.ts","./src/main.tsx","./src/secrets/zoom.ts"],"version":"5.6.2"}
