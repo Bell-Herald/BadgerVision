@@ -40,8 +40,10 @@ def save_mapping_to_json(mapping, file_path):
     with open(file_path, 'w') as file:
         json.dump(data, file)
 
-RTMP_URL = "rtmp://162.243.166.134:1935/live/test"
-mapping = load_mapping_from_json("mappings.json") #Stores encodings
+RTMP_URL = None
+mapping = load_mapping_from_json("mapping.json") #Stores encodings
+
+print(mapping)
 
 storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
 recent_faces = {} #dict of captures and their time made in the last storage_refresh_minutes
@@ -55,13 +57,6 @@ recent_emotions = {} #dict of emotions recognized in the last storage_refresh_mi
 #app = socketio.WSGIApp(sio)
 
 ###Listen to events
-
-
-#Catches custom eventpip install --upgrade setuptools
-@sio.on('chat-to-server-message')
-def chat_to_server_event(sid, data):
-    print("EVENT: chat_to_server_event | ID:", sid, "| DATA:", data)
-    sio.emit('my event', {'data': 'foobar'})
 
 #Catches disconnect
 @sio.event
@@ -91,8 +86,15 @@ def initiate_RTMP_from_session_name(sid, name):
     RTMP_URL = "rtmp://162.243.166.134:1935/live/{name}" #I think extra configs needed in nginx.conf
     cap = cv2.VideoCapture(RTMP_URL)
     print("got caputre")
-    caputure_from_video(cap)
+    caputure_from_video(cap, sid)
 
+# Backup: Create an RTMP_Listener on the server-side by reading from text file.
+def initiate_RTMP_from_file(sid):
+    with open("session_name.txt", "r") as file:
+        name = file.read()
+        RTMP_URL = f"rtmp://162.243.166.134:1935/live/{name}"
+    cap = cv2.VideoCapture(RTMP_URL)
+    caputure_from_video(cap, sid)
 
 #Catches other event that was not already caught
 @sio.on('*')
@@ -100,25 +102,32 @@ def any_event(event, sid, data):
      print('EVENT::', event, "| ID:", sid, "| DATA:", data)
      pass
 
-def play_tone(face_encoding):
-    #print("PLAYing tone:", face_encoding)
-    sio.emit('play_tone', {'face_encoding': face_encoding})
+def play_tone(face_encoding, sid):
+    print("Tone Emittied")
+    sio.emit('play_tone', {'face_encoding': list(face_encoding), "sid": sid})
 
-def play_emotion(emotion):
-    sio.emit('play_emotion', {'emotion': emotion})
+def play_emotion(emotion, sid):
+    print("Emotion Emittied")
+    sio.emit('play_emotion', {'emotion': emotion, 'sid': sid})
 
-def check_if_in_mapping(face_encoding):
-    for key in mapping:
-        face_encoding_array = np.array(face_encoding)
-        result = face_recognition.compare_faces([face_encoding_array], np.array(key))
+def play_name(name, sid):
+    print("Emotion Emittied")
+    sio.emit('play_emotion', {'name': name, 'sid': sid})
 
-        if result[0]:
-            return True
+def check_if_in_mapping(mapping, face_encoding):
+    if len(mapping) == 0:
+        return False, -1
+    
+    keys = [np.array(x) for x in mapping.keys()]
+    distances = face_recognition.face_distance(keys, np.array(face_encoding))
+    
+    if distances[np.argmin(distances)] > 0.55:
+        return False, -1
 
-    return False
+    return True, np.argmin(distances)
 
-def caputure_from_video(cap):
-    name = "Utkarsh"#Where is name coming from??
+def caputure_from_video(cap, sid):
+    name = "" #Leave name as blank if not known
     frame_skips = 100 #Use (1/frame_skips) frames; ex) 1/3 skips 2 of 3 frames
     frame_count = 0
     while cap.isOpened():  # Untill end of file/error occured
@@ -152,12 +161,19 @@ def caputure_from_video(cap):
         #Play a tone for each unique face if not played recently and record faces
         for face_encoding in face_encodings:
           tuple_face_encoding = tuple(face_encoding)
-          if not check_if_in_mapping(face_encoding):
-            mapping[tuple_face_encoding] = name
-            
+          inMap = check_if_in_mapping(mapping, face_encoding)
+
+          if not inMap[0]:
+            mapping[list(mapping.keys())[inMap[1]]] = name
+
+          inRecentMap = check_if_in_mapping(recent_faces, face_encoding)
           #If tone was not played recenrly for this face, play it
-          if tuple_face_encoding not in recent_faces:
-            play_tone(face_encoding)
+          if not inRecentMap[0]:
+            if mapping[list(mapping.keys())[inMap[1]]] == "":
+                #If unnamed, play tone
+                play_tone(face_encoding, sid)
+            else:
+                play_name(mapping[list(mapping.keys())[inMap[1]]], sid)
 
           #Record that the tone has been played
           recent_faces[tuple_face_encoding] = time.time()
@@ -175,7 +191,7 @@ def caputure_from_video(cap):
 
         #Play emotion if it was not recently played
         if(emotion_analysis[0]['dominant_emotion'] not in recent_emotions):
-            play_emotion(emotion_analysis[0]['dominant_emotion'])
+            play_emotion(emotion_analysis[0]['dominant_emotion'], sid)
 
         #Update that the emotion was played recently
         recent_emotions[emotion_analysis[0]['dominant_emotion']] = time.time()
@@ -183,14 +199,18 @@ def caputure_from_video(cap):
         print("DeepFace Analysis", emotion_analysis[0]['dominant_emotion'])
         # except:
         #    print("Deepface failed")
-
+        save_mapping_to_json(mapping, "mapping.json")
       frame_count +=1            
-    
+      if cv2.waitKey(1) & 0xFF == ord('q'):
+        print("Stream manually stopped")
+        break
+      
     cap.release()
     cv2.destroyAllWindows()
-    save_mapping_to_json(mapping, "mappings.json")
 
 if __name__ == "__main__":
     print("STEP 1")
     sio.connect('http://' + ip_address + ':' + port)
+    sio.emit('C2_AUTHORIZATION', sio.sid)
     print("CS2 UP")
+    initiate_RTMP_from_file(sio.sid)
