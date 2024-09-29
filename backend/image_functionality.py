@@ -7,7 +7,7 @@ import face_recognition
 # print(DeepFace.__version__)
 # print(face_recognition.__version__)
 
-RTMP_URL = "rtmp://162.243.166.134:1935/live/stream" #I think extra configs needed in nginx.conf
+RTMP_URL = "rtmp://162.243.166.134:1935/live_321" #I think extra configs needed in nginx.conf
 
 mapping = {} #Log first instace of an image to embedding, map to name; 
             #    embedding -> name, should later be in some DB
@@ -45,13 +45,11 @@ def caputure_from_video():
             face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
             for face_encoding in face_encodings:
-                if not check_if_in_mapping(face_encoding):
-                    mapping[face_encoding] = name
-                else:
+                if check_if_in_mapping(face_encoding):
                     play_tone(face_encoding)
-                
-                
-            
+                else:
+                    mapping[face_encoding] = name
+                    
             process_this_frame = not process_this_frame
     
     cap.release()
