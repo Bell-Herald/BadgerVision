@@ -43,9 +43,9 @@
   const form = document.getElementById('form');
   const input = document.getElementById('input');
 
-//  const client = ZoomVideo.createClient();
+  //const client = ZoomVideo.createClient();
 
-  client.init('en-US', 'CDN');
+  //client.init('en-US', 'CDN');
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -72,7 +72,7 @@
     console.log("TODO: play tone", tone);
   });
 
-  socket.on("zoom_initialization", (signature, sesion_name) => {
+/*  socket.on("zoom_initialization", (signature, sesion_name) => {
     var zoom_client = ZoomVideo.createClient()
     var stream
     zoom_client.init('en-US', 'Global', { patchJsMedia: true }).then(() => {
@@ -87,7 +87,7 @@
     }).catch((error) => {
       console.error('Failed to join Zoom session', error);
     });*/
-  });
+ // });
 
 
   socket.onAny((eventName, ...args) => {

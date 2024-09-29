@@ -2,9 +2,8 @@ import socketio
 import eventlet
 import json
 import time
-import current_datetime
 import jwt
-from backend import session_backend
+import session_backend
 
 
 ###Initialize server
@@ -56,7 +55,6 @@ def connect(sid, environ, auth):
     print('EVENT: connect | ID:', sid)
 
     # Get unique session name through date and time
-    current_datetime = datetime.now()
     session_id, session_name = session_backend.create_session()
 
     #TODO: Initializae zoom_Jwt

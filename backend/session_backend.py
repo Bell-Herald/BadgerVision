@@ -35,9 +35,9 @@ def create_session():
         session_id = session_info.get("session_id")
 
         # Write session info to a file for later use
-        with open("session_info.txt", "w") as file:
-            file.write(session_id + "\n")
-            file.write(session_name)
+#        with open("session_info.txt", "w") as file:
+#            file.write(session_id + "\n")
+#            file.write(session_name)
         
         return session_id, session_name  # Return session details if needed
     else:
