@@ -103,11 +103,16 @@ def any_event(event, sid, data):
      pass
 
 def play_tone(face_encoding, sid):
-    #print("PLAYing tone:", face_encoding)
+    print("Tone Emittied")
     sio.emit('play_tone', {'face_encoding': list(face_encoding), "sid": sid})
 
 def play_emotion(emotion, sid):
+    print("Emotion Emittied")
     sio.emit('play_emotion', {'emotion': emotion, 'sid': sid})
+
+def play_name(name, sid):
+    print("Emotion Emittied")
+    sio.emit('play_emotion', {'name': name, 'sid': sid})
 
 def check_if_in_mapping(mapping, face_encoding):
     if len(mapping) == 0:
@@ -168,7 +173,7 @@ def caputure_from_video(cap, sid):
                 #If unnamed, play tone
                 play_tone(face_encoding, sid)
             else:
-                play_emotion(mapping[list(mapping.keys())[inMap[1]]], sid)
+                play_name(mapping[list(mapping.keys())[inMap[1]]], sid)
 
           #Record that the tone has been played
           recent_faces[tuple_face_encoding] = time.time()
@@ -194,12 +199,14 @@ def caputure_from_video(cap, sid):
         print("DeepFace Analysis", emotion_analysis[0]['dominant_emotion'])
         # except:
         #    print("Deepface failed")
-
+        save_mapping_to_json(mapping, "mapping.json")
       frame_count +=1            
-    
+      if cv2.waitKey(1) & 0xFF == ord('q'):
+        print("Stream manually stopped")
+        break
+      
     cap.release()
     cv2.destroyAllWindows()
-    save_mapping_to_json(mapping, "mapping.json")
 
 if __name__ == "__main__":
     print("STEP 1")
