@@ -21,12 +21,93 @@ app = socketio.WSGIApp(sio)
 
 ###Listen to events
 
+<<<<<<< HEAD
+def upload_file_to_pinata(file_path):
+    try:
+        # Call the upload_file function we defined earlier
+        response = pinata.upload_file(
+            pinata_config,
+            file_path
+        )
+
+        # Output the response from Pinata
+        print("Upload successful! IPFS Hash:", response.get("IpfsHash"))
+        print("Full Response:", response)
+        return response
+
+    except pinata.PinataError as e:
+        print(f"Error during file upload: {e}")
+
+    finally:
+        # Clean up the test file after uploading
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            print(f"Test file '{file_path}' has been deleted.")
+
+#Catches connect
+@sio.event
+def connect(sid, environ, auth):
+    print('EVENT: connect | ID:', sid)
+
+    # Get unique session name through date and time
+    session_id, session_name = session_backend.create_session()
+
+    # https://developers.zoom.us/docs/video-sdk/auth/#how-to-generate-a-video-sdk-jwt
+    ZOOM_SDK_KEY = 'YLfqZ1zkO5UCcVBhuqKcYzXUZunSp5ZbKg3q'
+    ZOOM_SDK_SECRET = 'oYO7shH2XAk6X8hllehPI3VX74k45676Fl4t'
+    iat = int(time.time())
+    exp = iat + 60 * 5  # Signature expires in 5 minutes
+    payload = {
+        'app_key': ZOOM_SDK_KEY,
+        'role_type': 1,
+        'tpc': session_name,
+        'version': 1,
+        'iat': iat,
+        'exp': exp,
+    }
+    token = jwt.encode(payload, ZOOM_SDK_SECRET, algorithm='HS256')
+
+    data = {
+        "session_name": session_name,
+        "session_id": session_id,
+        "zoomJwt": token,
+        "websocketURL": "http://localhost:4000"
+    }
+
+    with open('data.json', 'w') as f:
+        json.dump(data, f)
+    
+    response = upload_file_to_pinata("data.json")
+    
+    print(response)
+
+    # Assuming 'id' is in the response
+    session_id_from_response = response['data']['cid']
+
+    print(session_id_from_response)
+    # Generate QR code
+    qr = qrcode.QRCode(version=3, box_size=20, border=10, error_correction=qrcode.constants.ERROR_CORRECT_H)
+    qr.add_data(session_id_from_response)
+    qr.make(fit=True)
+    # Convert the QR code to an image in memory
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    img.save("qr_code.png") 
+
+    # Send the QR code image and session information to the client
+    sio.emit('zoom_initialization', {
+        'token': token,
+        'session_name': session_name,
+        'session_id': session_id,
+    })
+=======
 
 #Catches custom eventpip install --upgrade setuptools
 @sio.on('chat-to-server-message')
 def chat_to_server_event(sid, data):
     print("EVENT: chat_to_server_event | ID:", sid, "| DATA:", data)
     sio.emit('my event', {'data': 'foobar'})
+>>>>>>> 6b19672d596f8cbce3182c7088df9412b2727b0c
 
 #Catches disconnect
 @sio.event
@@ -72,7 +153,7 @@ def play_tone(face_encoding):
     sio.emit('play_tone', {'face_encoding': face_encoding})
 
 def play_emotion(emotion):
-    sio.emit('play_tone', {'emotion': emotion})
+    sio.emit('play_emotion', {'emotion': emotion})
 
 def check_if_in_mapping(face_encoding):
     for key in mapping:
@@ -93,12 +174,33 @@ def caputure_from_video():
       ret, frame = cap.read()
 
       #Delete old values from recent_faces and recent_captures
+<<<<<<< HEAD
+      new_recent_faces_keys = []
+      new_recent_facse_values = []
+      for recent_face_key, recent_face_value in zip(recent_faces_keys, recent_faces_values):
+        if time.time + storage_refresh_minutes - recent_face_value > 0:
+            new_recent_faces_keys.append(recent_face_key)
+            new_recent_facse_values.append(recent_face_value)
+      recent_faces_keys = new_recent_faces_keys
+      recent_faces_values = new_recent_facse_values
+
+
+      new_recent_emotions_keys = []
+      new_recent_facse_values = []
+      for recent_emotion_key, recent_emotion_value in zip(recent_emotions_keys, recent_emotions_values):
+        if time.time + storage_refresh_minutes - recent_emotion_value > 0:
+            new_recent_emotions_keys.append(recent_emotion_key)
+            new_recent_facse_values.append(recent_emotion_value)
+      recent_emotions_keys = new_recent_emotions_keys
+      recent_emotions_values = new_recent_facse_values
+=======
       for recent_face in list(recent_faces.keys()):
         if time.time() + storage_refresh_minutes - recent_faces[recent_face] <= 0:
            del recent_faces[recent_face]
       for recent_emotion in list(recent_emotions.keys()):
         if time.time() + storage_refresh_minutes - recent_emotions[recent_emotion] <= 0:
            del recent_emotions[recent_emotion]
+>>>>>>> 6b19672d596f8cbce3182c7088df9412b2727b0c
 
       #Skip frames until frame_skips is reached
       if ret and (frame_count % frame_skips == 0):
