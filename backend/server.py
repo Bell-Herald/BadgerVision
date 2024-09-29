@@ -17,6 +17,45 @@ sio = socketio.Server(cors_allowed_origins='*')  # Allow requests from any origi
 # wrap with a WSGI application
 app = socketio.WSGIApp(sio)
 
+PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI1NjBhZTI4MC1lOWUyLTQ2YzctYjczZS1hOTc4MWY5ZjBkZjUiLCJlbWFpbCI6Im1heC5zLm1hZWRlckBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiNTMyZjRkM2M5MDYzYTEzNjM2MWMiLCJzY29wZWRLZXlTZWNyZXQiOiJlMjM5YWYxMzNiMzNhMWU0ZjVmNDkyYjgzMGM3YjlkZmZlODQwNTk3MTM4OGFlZDY2YWYyZGM2N2E1MmMxNGMzIiwiZXhwIjoxNzU5MTEzNzAyfQ.D8hJHBL4KFHEqdg8_eO88v9RTn38X_WtC9970_STF84"
+PINATA_API_KEY = "532f4d3c9063a136361c"
+PINATA_SECRET_KEY = "e239af133b33a1e4f5f492b830c7b9dffe8405971388aed66af2dc67a52c14c3"
+
+###Listen to events
+
+#Catches custom event
+@sio.on('chat-to-server-message')
+def chat_to_server_event(sid, data):
+    print("EVENT: chat_to_server_event | ID:", sid, "| DATA:", data)
+    sio.emit('my event', {'data': 'foobar'})
+
+@sio.on('update_livestream')
+def update_livestream_event(sid, data):
+    session_id = data.get('session_id')
+    stream_url = data.get('stream_url')
+    stream_key = data.get('stream_key')
+    page_url = data.get('page_url')
+
+    if session_id and stream_url and stream_key and page_url:
+        session_backend.update_livestream(session_id, stream_url, stream_key, page_url)
+        sio.emit('livestream_updated', {'session_id': session_id})
+    else:
+        sio.emit('livestream_update_failed', {'error': 'Missing required fields'})
+
+# Catch event to start live stream
+@sio.on('start_livestream')
+def start_livestream_event(sid, data):
+    session_id = data.get('session_id')
+    stream_url = data.get('stream_url')
+    stream_key = data.get('stream_key')
+    page_url = data.get('page_url')
+
+    if session_id and stream_url and stream_key and page_url:
+        session_backend.update_livestream_status(session_id, stream_url, stream_key, page_url)
+        sio.emit('livestream_started', {'session_id': session_id})
+    else:
+        sio.emit('livestream_start_failed', {'error': 'Missing required fields'})
+
 #Catches connect
 @sio.event
 def connect(sid, environ, auth):
@@ -40,7 +79,49 @@ def connect(sid, environ, auth):
     }
     token = jwt.encode(payload, ZOOM_SDK_SECRET, algorithm='HS256')
 
-    sio.emit('zoom_initialization', {'token':token,'session_name': session_name,'session_id': session_id})
+    data = {
+        "session_name": session_name,
+        "session_id": session_id,
+        "zoomJwt": token,
+        "websocketURL": "http://localhost:4000"
+    }
+
+    with open('data.json', 'w') as f:
+        json.dump(data, f)
+    
+    pinata = PinataPy(PINATA_API_KEY, PINATA_SECRET_KEY)
+    response_json = pinata.pin_file_to_ipfs("data.json")
+    
+    print(response_json)
+
+    # Assuming 'id' is in the response
+    session_id_from_response = response_json.get('id')
+
+    # Generate QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(session_id_from_response)
+    qr.make(fit=True)
+
+    # Convert the QR code to an image in memory
+    img = qr.make_image(fill='black', back_color='white')
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='PNG')
+
+    # Encode the image to base64
+    img_base64 = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
+
+    # Send the QR code image and session information to the client
+    sio.emit('zoom_initialization', {
+        'token': token,
+        'session_name': session_name,
+        'session_id': session_id,
+        'qr_code': img_base64  # Send the QR code as a base64 string
+    })
 
 #Catches disconnect
 @sio.event
