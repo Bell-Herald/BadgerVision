@@ -2,6 +2,7 @@ import { PinataSDK } from "pinata";
 import { SessionDetails } from "./App";
 import { PINATA_GATEWAY, PINATA_JWT } from "./secrets/pinata";
 import { io } from "socket.io-client";
+import { generateReducedJingle } from "jingle-gen";
 
 const getPinataClient = () => {
   return new PinataSDK({
