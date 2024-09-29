@@ -41,7 +41,9 @@ def save_mapping_to_json(mapping, file_path):
         json.dump(data, file)
 
 RTMP_URL = None
-mapping = load_mapping_from_json("mappings.json") #Stores encodings
+mapping = load_mapping_from_json("mapping.json") #Stores encodings
+
+print(mapping)
 
 storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
 recent_faces = {} #dict of captures and their time made in the last storage_refresh_minutes
@@ -102,20 +104,22 @@ def any_event(event, sid, data):
 
 def play_tone(face_encoding, sid):
     #print("PLAYing tone:", face_encoding)
-    sio.emit('play_tone', {'face_encoding': face_encoding, "sid": sid})
+    sio.emit('play_tone', {'face_encoding': list(face_encoding), "sid": sid})
 
 def play_emotion(emotion, sid):
     sio.emit('play_emotion', {'emotion': emotion, 'sid': sid})
 
-def check_if_in_mapping(face_encoding):
-    for key in mapping:
-        face_encoding_array = np.array(face_encoding)
-        result = face_recognition.compare_faces([face_encoding_array], np.array(key))
+def check_if_in_mapping(mapping, face_encoding):
+    if len(mapping) == 0:
+        return False, -1
+    
+    keys = [np.array(x) for x in mapping.keys()]
+    distances = face_recognition.face_distance(keys, np.array(face_encoding))
+    
+    if distances[np.argmin(distances)] > 0.55:
+        return False, -1
 
-        if result[0]:
-            return True
-
-    return False
+    return True, np.argmin(distances)
 
 def caputure_from_video(cap, sid):
     name = "" #Leave name as blank if not known
@@ -152,17 +156,19 @@ def caputure_from_video(cap, sid):
         #Play a tone for each unique face if not played recently and record faces
         for face_encoding in face_encodings:
           tuple_face_encoding = tuple(face_encoding)
-          if not check_if_in_mapping(face_encoding):
-            mapping[tuple_face_encoding] = name
-            
+          inMap = check_if_in_mapping(mapping, face_encoding)
+
+          if not inMap[0]:
+            mapping[list(mapping.keys())[inMap[1]]] = name
+
+          inRecentMap = check_if_in_mapping(recent_faces, face_encoding)
           #If tone was not played recenrly for this face, play it
-          if tuple_face_encoding not in recent_faces:
-            if(mapping[tuple_face_encoding] == ""):
+          if not inRecentMap[0]:
+            if mapping[list(mapping.keys())[inMap[1]]] == "":
                 #If unnamed, play tone
                 play_tone(face_encoding, sid)
             else:
-                #Otherwise, play name
-                play_emotion(mapping[tuple_face_encoding], sid)
+                play_emotion(mapping[list(mapping.keys())[inMap[1]]], sid)
 
           #Record that the tone has been played
           recent_faces[tuple_face_encoding] = time.time()
@@ -193,7 +199,7 @@ def caputure_from_video(cap, sid):
     
     cap.release()
     cv2.destroyAllWindows()
-    save_mapping_to_json(mapping, "mappings.json")
+    save_mapping_to_json(mapping, "mapping.json")
 
 if __name__ == "__main__":
     print("STEP 1")
