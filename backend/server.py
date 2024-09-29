@@ -25,7 +25,7 @@ def load_mapping_from_json(file_path):
             data = json.load(file)
             
             # Convert the keys back to tuples of floats, if needed
-            mapping = {tuple(map(float, key.split(','))): value for key, value in data.items()}
+            mapping = {tuple(map(float, key.strip('()').split(','))): value for key, value in data.items()}
     else:
         # If the file doesn't exist or is empty, return an empty dict
         mapping = {}
@@ -112,7 +112,7 @@ def play_emotion(emotion, sid):
 
 def play_name(name, sid):
     print("Emotion Emittied")
-    sio.emit('play_emotion', {'name': name, 'sid': sid})
+    sio.emit('play_name', {'name': name, 'sid': sid})
 
 def check_if_in_mapping(mapping, face_encoding):
     if len(mapping) == 0:
