@@ -123,56 +123,6 @@ def generate_qrcode():
 
     img.save("qr_code.png") 
 
-# Update the livestream settings to the stream url, stream key, and page url. [deprecated]
-# def update_livestream(session_id, stream_url, stream_key, page_url):
-#     url = f"https://api.zoom.us/v2/videosdk/sessions/{session_id}/livestream"
-    
-#     headers = {
-#         'Authorization': f'Bearer {ACCESS_TOKEN}',
-#         'Content-Type': 'application/json'
-#     }
-    
-#     # Data to be sent in the PATCH request
-#     data = {
-#         "stream_url": stream_url,
-#         "stream_key": stream_key,
-#         "page_url": page_url
-#     }
-    
-#     response = requests.patch(url, headers=headers, data=json.dumps(data))
-    
-#     if response.status_code == 204:
-#         print("Live stream updated successfully!")
-#     else:
-#         print("Failed to update live stream")
-#         print("Status Code:", response.status_code)
-#         print("Response:", response.text)
-
-# Start the livestream. [deprecated]
-# def update_livestream_status(session_id, stream_url, stream_key, page_url):
-#     url = f"https://api.zoom.us/v2/videosdk/sessions/{session_id}/livestream"
-
-#     headers = {
-#         'Authorization': f'Bearer {ACCESS_TOKEN}',
-#         'Content-Type': 'application/json'
-#     }
-
-#     data = {
-#         "action": "start",
-#         "stream_url": stream_url,
-#         "stream_key": stream_key,
-#         "page_url": page_url
-#     }
-
-#     response = requests.patch(url, headers=headers, data=json.dumps(data))
-
-#     if response.status_code == 204:
-#         print("Live stream updated successfully!")
-#     else:
-#         print("Failed to update live stream")
-#         print("Status Code:", response.status_code)
-#         print("Response:", response.text)
-
 if __name__ == "__main__":
     generate_qrcode()
     # session_id, session_name = create_session()

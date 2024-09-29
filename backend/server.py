@@ -10,104 +10,58 @@ import face_recognition
 from PIL import Image as im
 import time
 import numpy as np
+import os
 
+port = "3000"
+ip_address = "162.243.166.134"
+
+sio = socketio.Client()
+
+def load_mapping_from_json(file_path):
+    # Check if the file exists and is non-empty
+    if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+        # Open and load the JSON file
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+            
+            # Convert the keys back to tuples of floats, if needed
+            mapping = {tuple(map(float, key.split(','))): value for key, value in data.items()}
+    else:
+        # If the file doesn't exist or is empty, return an empty dict
+        mapping = {}
+
+    return mapping
+
+def save_mapping_to_json(mapping, file_path):
+    # Convert the tuple keys to strings to store them in JSON
+    data = {','.join(map(str, key)): value for key, value in mapping.items()}
+    
+    # Save the dictionary to the JSON file
+    with open(file_path, 'w') as file:
+        json.dump(data, file)
+
+RTMP_URL = "rtmp://162.243.166.134:1935/live/test"
+mapping = load_mapping_from_json("mappings.json") #Stores encodings
+
+storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
+recent_faces = {} #dict of captures and their time made in the last storage_refresh_minutes
+recent_emotions = {} #dict of emotions recognized in the last storage_refresh_minutes
 
 ###Initialize server
 # create a Socket.IO server
-sio = socketio.Server(cors_allowed_origins='*')  # Allow requests from any origin
+#sio = socketio.Server(cors_allowed_origins='*')  # Allow requests from any origin
 
 # wrap with a WSGI application
-app = socketio.WSGIApp(sio)
+#app = socketio.WSGIApp(sio)
 
 ###Listen to events
 
-<<<<<<< HEAD
-def upload_file_to_pinata(file_path):
-    try:
-        # Call the upload_file function we defined earlier
-        response = pinata.upload_file(
-            pinata_config,
-            file_path
-        )
-
-        # Output the response from Pinata
-        print("Upload successful! IPFS Hash:", response.get("IpfsHash"))
-        print("Full Response:", response)
-        return response
-
-    except pinata.PinataError as e:
-        print(f"Error during file upload: {e}")
-
-    finally:
-        # Clean up the test file after uploading
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            print(f"Test file '{file_path}' has been deleted.")
-
-#Catches connect
-@sio.event
-def connect(sid, environ, auth):
-    print('EVENT: connect | ID:', sid)
-
-    # Get unique session name through date and time
-    session_id, session_name = session_backend.create_session()
-
-    # https://developers.zoom.us/docs/video-sdk/auth/#how-to-generate-a-video-sdk-jwt
-    ZOOM_SDK_KEY = 'YLfqZ1zkO5UCcVBhuqKcYzXUZunSp5ZbKg3q'
-    ZOOM_SDK_SECRET = 'oYO7shH2XAk6X8hllehPI3VX74k45676Fl4t'
-    iat = int(time.time())
-    exp = iat + 60 * 5  # Signature expires in 5 minutes
-    payload = {
-        'app_key': ZOOM_SDK_KEY,
-        'role_type': 1,
-        'tpc': session_name,
-        'version': 1,
-        'iat': iat,
-        'exp': exp,
-    }
-    token = jwt.encode(payload, ZOOM_SDK_SECRET, algorithm='HS256')
-
-    data = {
-        "session_name": session_name,
-        "session_id": session_id,
-        "zoomJwt": token,
-        "websocketURL": "http://localhost:4000"
-    }
-
-    with open('data.json', 'w') as f:
-        json.dump(data, f)
-    
-    response = upload_file_to_pinata("data.json")
-    
-    print(response)
-
-    # Assuming 'id' is in the response
-    session_id_from_response = response['data']['cid']
-
-    print(session_id_from_response)
-    # Generate QR code
-    qr = qrcode.QRCode(version=3, box_size=20, border=10, error_correction=qrcode.constants.ERROR_CORRECT_H)
-    qr.add_data(session_id_from_response)
-    qr.make(fit=True)
-    # Convert the QR code to an image in memory
-    img = qr.make_image(fill_color="black", back_color="white")
-
-    img.save("qr_code.png") 
-
-    # Send the QR code image and session information to the client
-    sio.emit('zoom_initialization', {
-        'token': token,
-        'session_name': session_name,
-        'session_id': session_id,
-    })
-=======
 
 #Catches custom eventpip install --upgrade setuptools
 @sio.on('chat-to-server-message')
 def chat_to_server_event(sid, data):
     print("EVENT: chat_to_server_event | ID:", sid, "| DATA:", data)
     sio.emit('my event', {'data': 'foobar'})
->>>>>>> 6b19672d596f8cbce3182c7088df9412b2727b0c
 
 #Catches disconnect
 @sio.event
@@ -130,23 +84,21 @@ def face_added(sid, data):
     
     print("TODO: save face to Pinata here")
 
+
+#Create an RTMP_Listener after hearing back from the client
+@sio.on('session_name')
+def initiate_RTMP_from_session_name(sid, name):
+    RTMP_URL = "rtmp://162.243.166.134:1935/live/{name}" #I think extra configs needed in nginx.conf
+    cap = cv2.VideoCapture(RTMP_URL)
+    print("got caputre")
+    caputure_from_video(cap)
+
+
 #Catches other event that was not already caught
 @sio.on('*')
 def any_event(event, sid, data):
      print('EVENT::', event, "| ID:", sid, "| DATA:", data)
      pass
-
-RTMP_URL = "rtmp://162.243.166.134:1935/live/test" #I think extra configs needed in nginx.conf
-
-mapping = {} #Stores encodings
-
-storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
-recent_faces = {} #dict of captures and their time made in the last storage_refresh_minutes
-recent_emotions = {} #dict of emotions recognized in the last storage_refresh_minutes
-
-cap = cv2.VideoCapture(RTMP_URL)
-
-print("got caputre")
 
 def play_tone(face_encoding):
     #print("PLAYing tone:", face_encoding)
@@ -165,42 +117,20 @@ def check_if_in_mapping(face_encoding):
 
     return False
 
-def caputure_from_video():
-    name = ""#Where is name coming from??
-    process_this_frame = 0
+def caputure_from_video(cap):
+    name = "Utkarsh"#Where is name coming from??
     frame_skips = 100 #Use (1/frame_skips) frames; ex) 1/3 skips 2 of 3 frames
     frame_count = 0
     while cap.isOpened():  # Untill end of file/error occured
       ret, frame = cap.read()
 
       #Delete old values from recent_faces and recent_captures
-<<<<<<< HEAD
-      new_recent_faces_keys = []
-      new_recent_facse_values = []
-      for recent_face_key, recent_face_value in zip(recent_faces_keys, recent_faces_values):
-        if time.time + storage_refresh_minutes - recent_face_value > 0:
-            new_recent_faces_keys.append(recent_face_key)
-            new_recent_facse_values.append(recent_face_value)
-      recent_faces_keys = new_recent_faces_keys
-      recent_faces_values = new_recent_facse_values
-
-
-      new_recent_emotions_keys = []
-      new_recent_facse_values = []
-      for recent_emotion_key, recent_emotion_value in zip(recent_emotions_keys, recent_emotions_values):
-        if time.time + storage_refresh_minutes - recent_emotion_value > 0:
-            new_recent_emotions_keys.append(recent_emotion_key)
-            new_recent_facse_values.append(recent_emotion_value)
-      recent_emotions_keys = new_recent_emotions_keys
-      recent_emotions_values = new_recent_facse_values
-=======
       for recent_face in list(recent_faces.keys()):
         if time.time() + storage_refresh_minutes - recent_faces[recent_face] <= 0:
            del recent_faces[recent_face]
       for recent_emotion in list(recent_emotions.keys()):
         if time.time() + storage_refresh_minutes - recent_emotions[recent_emotion] <= 0:
            del recent_emotions[recent_emotion]
->>>>>>> 6b19672d596f8cbce3182c7088df9412b2727b0c
 
       #Skip frames until frame_skips is reached
       if ret and (frame_count % frame_skips == 0):
@@ -258,38 +188,9 @@ def caputure_from_video():
     
     cap.release()
     cv2.destroyAllWindows()
+    save_mapping_to_json(mapping, "mappings.json")
 
 if __name__ == "__main__":
     print("STEP 1")
-    caputure_from_video()
-    print("STEP 2")
-    eventlet.wsgi.server(eventlet.listen(('', 4000)), app)
-    print("Server started")
-
-###Listen to events
-#@sio.on('update_livestream')
-#def update_livestream_event(sid, data):
-#    session_id = data.get('session_id')
-#    stream_url = data.get('stream_url')
-#    stream_key = data.get('stream_key')pip install --upgrade setuptools
-#    page_url = data.get('page_url')
-#
-#    if session_id and stream_url and stream_key and page_url:
-#        session_backend.update_livestream(session_id, stream_url, stream_key, page_url)
-#        sio.emit('livestream_updated', {'session_id': session_id})
-#    else:
-#        sio.emit('livestream_update_failed', {'error': 'Missing required fields'})
-
-# Catch event to start live stream
-#@sio.on('start_livestream')
-#def start_livestream_event(sid, data):
-#    session_id = data.get('session_id')
-#    stream_url = data.get('stream_url')
-#    stream_key = data.get('stream_key')
-#    page_url = data.get('page_url')
-#
-#    if session_id and stream_url and stream_key and page_url:
-#        session_backend.update_livestream_status(session_id, stream_url, stream_key, page_url)
-#        sio.emit('livestream_started', {'session_id': session_id})
-#    else:
-#        sio.emit('livestream_start_failed', {'error': 'Missing required fields'})
+    sio.connect('http://' + ip_address + ':' + port)
+    print("CS2 UP")
