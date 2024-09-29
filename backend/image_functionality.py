@@ -21,7 +21,7 @@ from PIL import Image as im
 # print(DeepFace.__version__)
 # print(face_recognition.__version__)
 
-RTMP_URL = "rtmp://162.243.166.134:1935/live/stream" #I think extra configs needed in nginx.conf
+RTMP_URL = "rtmp://162.243.166.134:1935/live_321" #I think extra configs needed in nginx.conf
 
 mapping = {} #Log first instace of an image to embedding, map to name;
             #    embedding -> name, should later be in some DB
@@ -78,5 +78,13 @@ def caputure_from_video():
         print("DeepFace Analysis", objs)
       frame_count +=1
 
+            for face_encoding in face_encodings:
+                if check_if_in_mapping(face_encoding):
+                    play_tone(face_encoding)
+                else:
+                    mapping[face_encoding] = name
+                    
+            process_this_frame = not process_this_frame
+    
     cap.release()
     cv2.destroyAllWindows()
