@@ -71,7 +71,7 @@ def any_event(event, sid, data):
 
 RTMP_URL = "rtmp://162.243.166.134:1935/live/test" #I think extra configs needed in nginx.conf
 
-mapping = [] #Stores encodings
+mapping = {} #Stores encodings
 
 storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
 recent_faces = {} #dict of captures and their time made in the last storage_refresh_minutes
@@ -89,9 +89,8 @@ def play_emotion(emotion):
     sio.emit('play_tone', {'emotion': emotion})
 
 def check_if_in_mapping(face_encoding):
-
     for key in mapping:
-        result = face_recognition.compare_faces([face_encoding], key)
+        result = face_recognition.compare_faces([face_encoding], list(key))
 
         if result[0]:
             return True
@@ -129,19 +128,20 @@ def caputure_from_video():
             continue
         
         #Encodings are sorted from left to right
-        face_encodings = sorted(face_encodings, key=lambda x: x.known_face_locations[3])
+        #face_encodings = sorted(face_encodings, key=lambda x: x.known_face_locations[3])
 
         #Play a tone for each unique face if not played recently and record faces
         for face_encoding in face_encodings:
+          tuple_face_encoding = tuple(face_encoding)
           if not check_if_in_mapping(face_encoding):
-            mapping.append(face_encoding)
+            mapping[tuple(face_encoding)] = name
             
           #If tone was not played recenrly for this face, play it
-          if face_encoding not in recent_faces:
+          if tuple_face_encoding not in recent_faces:
             play_tone(face_encoding)
 
           #Record that the tone has been played
-          recent_faces[face_encoding] = time.time()
+          recent_faces[tuple_face_encoding] = time.time()
                
         #Emotion Detection With DeepFace
         data = im.fromarray(frame)
@@ -172,6 +172,7 @@ def caputure_from_video():
 if __name__ == "__main__":
     eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
     caputure_from_video()
+    print("Server started")
 
 ###Listen to events
 #@sio.on('update_livestream')
