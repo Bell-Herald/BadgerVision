@@ -1,9 +1,10 @@
 import socketio
 import eventlet
 import json
-import qrcode
-import datetime
+import time
+import current_datetime
 import jwt
+from backend import session_backend
 
 
 ###Initialize server
@@ -22,6 +23,33 @@ def chat_to_server_event(sid, data):
     print("EVENT: chat_to_server_event | ID:", sid, "| DATA:", data)
     sio.emit('my event', {'data': 'foobar'})
 
+@sio.on('update_livestream')
+def update_livestream_event(sid, data):
+    session_id = data.get('session_id')
+    stream_url = data.get('stream_url')
+    stream_key = data.get('stream_key')
+    page_url = data.get('page_url')
+
+    if session_id and stream_url and stream_key and page_url:
+        session_backend.update_livestream(session_id, stream_url, stream_key, page_url)
+        sio.emit('livestream_updated', {'session_id': session_id})
+    else:
+        sio.emit('livestream_update_failed', {'error': 'Missing required fields'})
+
+# Catch event to start live stream
+@sio.on('start_livestream')
+def start_livestream_event(sid, data):
+    session_id = data.get('session_id')
+    stream_url = data.get('stream_url')
+    stream_key = data.get('stream_key')
+    page_url = data.get('page_url')
+
+    if session_id and stream_url and stream_key and page_url:
+        session_backend.update_livestream_status(session_id, stream_url, stream_key, page_url)
+        sio.emit('livestream_started', {'session_id': session_id})
+    else:
+        sio.emit('livestream_start_failed', {'error': 'Missing required fields'})
+
 #Catches connect
 @sio.event
 def connect(sid, environ, auth):
@@ -29,20 +57,13 @@ def connect(sid, environ, auth):
 
     # Get unique session name through date and time
     current_datetime = datetime.now()
-    session_name = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
+    session_id, session_name = session_backend.create_session()
 
-#    qr = qrcode.QRCode(version=3, box_size=20, border=10, error_correction=qrcode.constants.ERROR_CORRECT_H)
-#    qr.add_data(socketio_Url) #WHICH URL??
-#    qr.make(fit=True)
-#    img = qr.make_image(fill_color="black", back_color="white")
-#    img.save("qr_code.png") #Send this image over
-
-    #Send zoom information
     #TODO: Initializae zoom_Jwt
 
 
-    ZOOM_SDK_KEY = 'your_sdk_key'
-    ZOOM_SDK_SECRET = 'your_sdk_secret'
+    ZOOM_SDK_KEY = 'YLfqZ1zkO5UCcVBhuqKcYzXUZunSp5ZbKg3q'
+    ZOOM_SDK_SECRET = 'oYO7shH2XAk6X8hllehPI3VX74k45676Fl4t'
     iat = int(time.time())
     exp = iat + 60 * 5  # Signature expires in 5 minutes
     payload = {
@@ -56,7 +77,7 @@ def connect(sid, environ, auth):
     }
     token = jwt.encode(payload, ZOOM_SDK_SECRET, algorithm='HS256')
 
-    sio.emit('zoom_initialization', {'data': session_name})
+    sio.emit('zoom_initialization', {'token':token,'session_name': session_name, 'session_id': session_id})
 
 #Catches disconnect
 @sio.event
@@ -99,4 +120,3 @@ if __name__ == '__main__':
 When a face is recognized:
     sio.emit('face_recognized', {'data': TONE})
 """
-
