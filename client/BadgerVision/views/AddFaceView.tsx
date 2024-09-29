@@ -17,12 +17,6 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: 10,
   },
-  buttonContainer: {
-    display: "flex",
-    flexDirection: "column",
-    flexWrap: "nowrap",
-    justifyContent: "space-between",
-  },
 });
 
 const AddFaceView = ({
@@ -38,7 +32,7 @@ const AddFaceView = ({
     if (!ref.current) return;
 
     const photo = await ref.current.takePictureAsync();
-    setImage(photo?.base64 as string);
+    setImage(photo?.uri as string);
   };
 
   const handleScanCode = () => {};
@@ -51,23 +45,16 @@ const AddFaceView = ({
         onChangeText={(text) => setName(text)}
       />
       <CameraView facing={"back"} style={styles.camera} ref={ref} />
-      <View style={styles.buttonContainer}>
-        <IconButton
-          icon="camera"
-          iconColor={MD3Colors.primary0}
-          mode="contained-tonal"
-          size={30}
-          onPress={handleCaptureImage}
-        />
-        <Button
-          mode="contained-tonal"
-          onPress={handleScanCode}
-          disabled={!name || !image}
-        >
-          Add Face
-        </Button>
-      </View>
-      <Text></Text>
+      <Button mode="contained-tonal" onPress={handleCaptureImage}>
+        Capture Photo
+      </Button>
+      <Button
+        mode="contained-tonal"
+        onPress={handleScanCode}
+        disabled={!name || !image}
+      >
+        Add Face
+      </Button>
     </View>
   );
 };
