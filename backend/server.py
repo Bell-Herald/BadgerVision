@@ -108,7 +108,8 @@ def play_tone(face_encoding, sid):
 
 def play_emotion(emotion, sid):
     print("Emotion Emittied")
-    sio.emit('play_emotion', {'emotion': emotion, 'sid': sid})
+    #sio.emit('play_emotion', {'emotion': emotion, 'sid': sid})
+    sio.emit('play_name', {'name': emotion, 'sid': sid})
 
 def play_name(name, sid):
     print("Emotion Emittied")
