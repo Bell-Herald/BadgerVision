@@ -16,13 +16,13 @@ from PIL import Image as im
 # print(DeepFace.__version__)
 # print(face_recognition.__version__)
 
-RTMP_URL = "rtmp://162.243.166.134:1935/live_321" #I think extra configs needed in nginx.conf
+RTMP_URL = "rtmp://162.243.166.134:1935/live/test" #I think extra configs needed in nginx.conf
 
-mapping = {} #Log first instace of an image to embedding, map to name;
-            #    embedding -> name, should later be in some DB
-            #    (128,) len vector -> name(string)
+mapping = []
 
 cap = cv2.VideoCapture(RTMP_URL)
+
+print("got caputre")
 
 def play_tone(face_encoding):
     print("PLAY TONE: send message to client made up of the compressed face_encoding so they can play it")
@@ -31,7 +31,7 @@ def play_tone(face_encoding):
 
 def check_if_in_mapping(face_encoding):
 
-    for key in mapping.keys():
+    for key in mapping:
         result = face_recognition.compare_faces([face_encoding], key)
 
         if result[0]:
@@ -42,44 +42,59 @@ def check_if_in_mapping(face_encoding):
 def caputure_from_video():
     name = ""#Where is name coming from??
     process_this_frame = 0
-    frame_skips = 2 #Use (1/frame_skips) frames; ex) 1/3 skips 2 of 3 frames
+    frame_skips = 100 #Use (1/frame_skips) frames; ex) 1/3 skips 2 of 3 frames
     frame_count = 0
     while cap.isOpened():  # Untill end of file/error occured
       ret, frame = cap.read()
 
       if ret and (frame_count % frame_skips == 0):
         small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+        # rgb_small_frame = small_frame[:, :, ::-1]
 
-        rgb_small_frame = small_frame[:, :, ::-1]
-
-        face_locations = face_recognition.face_locations(rgb_small_frame)
-        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+        face_locations = face_recognition.face_locations(frame)
+        if face_locations:
+        # Compute the facial encodings for the faces detected
+            face_encodings = face_recognition.face_encodings(frame, known_face_locations=face_locations)
+            
+            # You can now proceed with the face encodings (e.g., comparing or storing them)
+            print("Face encodings:", len(face_encodings))
+        else:
+            print("No face locations detected")
+            continue
 
         for face_encoding in face_encodings:
           if not check_if_in_mapping(face_encoding):
-            mapping[face_encoding] = name
+            mapping.append(face_encoding)
           play_tone(face_encoding)
 
 
         #Emotion Detection With DeepFace
-        data = im.fromarray(rgb_small_frame)
+        data = im.fromarray(frame)
         data.save("image_for_deepface.jpg")
 
-        objs = DeepFace.analyze(
-          img_path = "image_for_deepface.jpg",
-          actions = ['age', 'gender', 'race', 'emotion'],
-        )
+        try:
+            objs = DeepFace.analyze(
+            img_path = "image_for_deepface.jpg",
+            actions = ['emotion'],
+            )
 
-        print("DeepFace Analysis", objs)
+            print("DeepFace Analysis", objs)
+        except:
+           print("Deepface failed")
+
       frame_count +=1
 
     for face_encoding in face_encodings:
         if check_if_in_mapping(face_encoding):
             play_tone(face_encoding)
         else:
-            mapping[face_encoding] = name
+            # mapping[face_encoding] = name
+            print("Skip")
             
-    process_this_frame = not process_this_frame
+    # process_this_frame = not process_this_frame
     
     cap.release()
     cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+   caputure_from_video()

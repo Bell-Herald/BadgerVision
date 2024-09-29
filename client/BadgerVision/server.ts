@@ -1,5 +1,5 @@
 import { PinataSDK } from "pinata";
-import { SessionDetails } from "./App";
+import { SessionDetails } from "../../zoom-video-sdk/App";
 import { PINATA_GATEWAY, PINATA_JWT } from "./secrets/pinata";
 
 const getPinataClient = () => {
