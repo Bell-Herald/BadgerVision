@@ -1,8 +1,8 @@
 import socketio
 import eventlet
 import json
-import qrcode
-import datetime
+import time
+import current_datetime
 import jwt
 
 
@@ -31,16 +31,6 @@ def connect(sid, environ, auth):
     current_datetime = datetime.now()
     session_name = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
 
-#    qr = qrcode.QRCode(version=3, box_size=20, border=10, error_correction=qrcode.constants.ERROR_CORRECT_H)
-#    qr.add_data(socketio_Url) #WHICH URL??
-#    qr.make(fit=True)
-#    img = qr.make_image(fill_color="black", back_color="white")
-#    img.save("qr_code.png") #Send this image over
-
-    #Send zoom information
-    #TODO: Initializae zoom_Jwt
-
-
     ZOOM_SDK_KEY = 'your_sdk_key'
     ZOOM_SDK_SECRET = 'your_sdk_secret'
     iat = int(time.time())
@@ -56,7 +46,7 @@ def connect(sid, environ, auth):
     }
     token = jwt.encode(payload, ZOOM_SDK_SECRET, algorithm='HS256')
 
-    sio.emit('zoom_initialization', {'data': session_name})
+    sio.emit('zoom_initialization', {'data': {'token': token, 'session_name': session_name}})
 
 #Catches disconnect
 @sio.event
@@ -99,4 +89,3 @@ if __name__ == '__main__':
 When a face is recognized:
     sio.emit('face_recognized', {'data': TONE})
 """
-

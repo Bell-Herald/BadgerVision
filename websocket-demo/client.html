@@ -25,7 +25,14 @@
 </html>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<!--
+<script type="module">
+-->
+
 <script>
+//  import ZoomVideo from '@zoom/videosdk'
+
   const socket = io('http://localhost:5000');
   //var socket = new io.Socket();
   //socket.connect('http://' + ipAddress + ':' + port);
@@ -36,7 +43,7 @@
   const form = document.getElementById('form');
   const input = document.getElementById('input');
 
-  const client = ZoomVideo.createClient();
+//  const client = ZoomVideo.createClient();
 
   client.init('en-US', 'CDN');
 
@@ -65,19 +72,32 @@
     console.log("TODO: play tone", tone);
   });
 
-  socket.on("zoom_initialization", (signature) => {
-    client.join(signature, 'Session Name', 'Your User ID').then(() => {
+  socket.on("zoom_initialization", (signature, sesion_name) => {
+    var zoom_client = ZoomVideo.createClient()
+    var stream
+    zoom_client.init('en-US', 'Global', { patchJsMedia: true }).then(() => {
+      zoom_client
+        .join(sesion_name, signature, 'my-name')
+        .then(() => {
+          stream = zoom_client.getMediaStream()
+        })
+    })
+    /*client.join(signature, 'Session Name', 'Your User ID').then(() => {
       console.log('Successfully joined Zoom session');
     }).catch((error) => {
       console.error('Failed to join Zoom session', error);
-    });
+    });*/
   });
+
 
   socket.onAny((eventName, ...args) => {
     console.log("input recieved")
     console.log(eventName); // 'hello'
     console.log(args); // [ 1, '2', { 3: '4', 5: ArrayBuffer (1) [ 6 ] } ]
   });
+
+
+
 
   
 
