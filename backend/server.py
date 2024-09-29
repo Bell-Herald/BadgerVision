@@ -53,40 +53,6 @@ def upload_file_to_pinata(file_path):
             os.remove(file_path)
             print(f"Test file '{file_path}' has been deleted.")
 
-
-#Catches custom eventpip install --upgrade setuptools
-@sio.on('chat-to-server-message')
-def chat_to_server_event(sid, data):
-    print("EVENT: chat_to_server_event | ID:", sid, "| DATA:", data)
-    sio.emit('my event', {'data': 'foobar'})
-
-@sio.on('update_livestream')
-def update_livestream_event(sid, data):
-    session_id = data.get('session_id')
-    stream_url = data.get('stream_url')
-    stream_key = data.get('stream_key')
-    page_url = data.get('page_url')
-
-    if session_id and stream_url and stream_key and page_url:
-        session_backend.update_livestream(session_id, stream_url, stream_key, page_url)
-        sio.emit('livestream_updated', {'session_id': session_id})
-    else:
-        sio.emit('livestream_update_failed', {'error': 'Missing required fields'})
-
-# Catch event to start live stream
-@sio.on('start_livestream')
-def start_livestream_event(sid, data):
-    session_id = data.get('session_id')
-    stream_url = data.get('stream_url')
-    stream_key = data.get('stream_key')
-    page_url = data.get('page_url')
-
-    if session_id and stream_url and stream_key and page_url:
-        session_backend.update_livestream_status(session_id, stream_url, stream_key, page_url)
-        sio.emit('livestream_started', {'session_id': session_id})
-    else:
-        sio.emit('livestream_start_failed', {'error': 'Missing required fields'})
-
 #Catches connect
 @sio.event
 def connect(sid, environ, auth):
