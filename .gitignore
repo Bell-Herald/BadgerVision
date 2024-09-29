@@ -3,3 +3,4 @@ backend/__pycache__/*
 *.DS_Store
 backend/session_info.txt
 backend/qr_code.png
+session_name.txt

@@ -95,6 +95,9 @@ def generate_qrcode():
     session_id, session_name = create_session()
     token = create_jwt(session_name)
 
+    with open("session_name.txt", "w") as f:
+        f.write(session_name)
+
     data = {
         "zoomSessionName": session_name,
         "zoomJwt": token,
@@ -120,15 +123,14 @@ def generate_qrcode():
     qr.make(fit=True)
     # Convert the QR code to an image in memory
     img = qr.make_image(fill_color="black", back_color="white")
-
     img.save("qr_code.png") 
+
+    # Debugging stuff
+    with open("session_info.txt", "w") as f:
+        f.write(f"Session ID: {session_id}\n")
+        f.write(f"Session Name: {session_name}\n")
+        f.write(f"Session JWT: {token}\n")
+        f.write(f"https://badgervision-5a9a2.firebaseapp.com/?sessionName={session_name}&jwt={token}\n")
 
 if __name__ == "__main__":
     generate_qrcode()
-    # session_id, session_name = create_session()
-    # session_jwt = create_jwt(session_name)
-    # with open("session_info.txt", "w") as f:
-    #     f.write(f"Session ID: {session_id}\n")
-    #     f.write(f"Session Name: {session_name}\n")
-    #     f.write(f"Session JWT: {session_jwt}\n")
-    #     f.write(f"https://badgervision-5a9a2.firebaseapp.com/?sessionName={session_name}&jwt={session_jwt}\n")

