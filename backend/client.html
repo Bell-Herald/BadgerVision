@@ -12,5 +12,5 @@
 
   session_name = "ENTER_SESSION_NAME_HERE"
 
-  socket.emit('session_name', session_name);
+  socket.emit('session_name', {'session_name': session_name, 'ssid': ssid});
 </script>

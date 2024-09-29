@@ -32,13 +32,6 @@ recent_emotions = {} #dict of emotions recognized in the last storage_refresh_mi
 
 ###Listen to events
 
-
-#Catches custom eventpip install --upgrade setuptools
-@sio.on('chat-to-server-message')
-def chat_to_server_event(sid, data):
-    print("EVENT: chat_to_server_event | ID:", sid, "| DATA:", data)
-    sio.emit('my event', {'data': 'foobar'})
-
 #Catches disconnect
 @sio.event
 def disconnect(sid):
@@ -67,7 +60,7 @@ def initiate_RTMP_from_session_name(sid, name):
     RTMP_URL = "rtmp://162.243.166.134:1935/live/{name}" #I think extra configs needed in nginx.conf
     cap = cv2.VideoCapture(RTMP_URL)
     print("got caputre")
-    caputure_from_video(cap)
+    caputure_from_video(cap, sid)
 
 
 #Catches other event that was not already caught
@@ -76,12 +69,12 @@ def any_event(event, sid, data):
      print('EVENT::', event, "| ID:", sid, "| DATA:", data)
      pass
 
-def play_tone(face_encoding):
+def play_tone(face_encoding, sid):
     #print("PLAYing tone:", face_encoding)
-    sio.emit('play_tone', {'face_encoding': face_encoding})
+    sio.emit('play_tone', {'face_encoding': face_encoding, "sid": sid})
 
-def play_emotion(emotion):
-    sio.emit('play_emotion', {'emotion': emotion})
+def play_emotion(emotion, sid):
+    sio.emit('play_emotion', {'emotion': emotion, 'sid': sid})
 
 def check_if_in_mapping(face_encoding):
     for key in mapping:
@@ -93,7 +86,7 @@ def check_if_in_mapping(face_encoding):
 
     return False
 
-def caputure_from_video(cap):
+def caputure_from_video(cap, sid):
     name = ""#Where is name coming from??
     frame_skips = 100 #Use (1/frame_skips) frames; ex) 1/3 skips 2 of 3 frames
     frame_count = 0
@@ -133,7 +126,12 @@ def caputure_from_video(cap):
             
           #If tone was not played recenrly for this face, play it
           if tuple_face_encoding not in recent_faces:
-            play_tone(face_encoding)
+            if(mapping[tuple_face_encoding] == ""):
+                #If unnamed, play tone
+                play_tone(face_encoding, sid)
+            else:
+                #Otherwise, play name
+                play_emotion(mapping[tuple_face_encoding], sid)
 
           #Record that the tone has been played
           recent_faces[tuple_face_encoding] = time.time()
@@ -151,7 +149,7 @@ def caputure_from_video(cap):
 
         #Play emotion if it was not recently played
         if(emotion_analysis[0]['dominant_emotion'] not in recent_emotions):
-            play_emotion(emotion_analysis[0]['dominant_emotion'])
+            play_emotion(emotion_analysis[0]['dominant_emotion'], sid)
 
         #Update that the emotion was played recently
         recent_emotions[emotion_analysis[0]['dominant_emotion']] = time.time()
@@ -168,4 +166,5 @@ def caputure_from_video(cap):
 if __name__ == "__main__":
     print("STEP 1")
     sio.connect('http://' + ip_address + ':' + port)
+    sio.emit('C2_AUTHORIZATION', sio.sid)
     print("CS2 UP")
