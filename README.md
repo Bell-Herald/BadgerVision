@@ -41,10 +41,10 @@ People who suffer from alexithymia have difficulty identifying emotions in other
 ## What challenges are you building for? SELECT ALL THAT APPLY
 *See hackmidwest.com/#prizes for challenge details*
 - [ X ]  Pinata Challenge
-- [ ]  Pinata AI Challenge
+- [ X ]  Pinata AI Challenge
 - [ ]  Pinata Enterprise Challenge
 - [ ]  AWS Bedrock Challenge
-- [ X ]  Red Hat | Intel AI Challenge
+- [ ]  Red Hat | Intel AI Challenge
 - [ X ]  Zoom Challenge
 - [ ]  USDA Challenge
 - [ ]  brAIn Rot Challenge
