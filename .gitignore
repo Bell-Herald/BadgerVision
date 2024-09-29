@@ -1,3 +1,4 @@
 zoom-video-sdk/node_modules/*
 backend/__pycache__/*
 *.DS_Store
+backend/session_info.txt
