@@ -87,12 +87,12 @@ def initiate_RTMP_from_session_name(sid, name):
     caputure_from_video(cap, sid)
 
 # Backup: Create an RTMP_Listener on the server-side by reading from text file.
-def initiate_RTMP_from_file():
+def initiate_RTMP_from_file(sid):
     with open("session_name.txt", "r") as file:
         name = file.read()
         RTMP_URL = f"rtmp://162.243.166.134:1935/live/{name}"
     cap = cv2.VideoCapture(RTMP_URL)
-    caputure_from_video(cap)
+    caputure_from_video(cap, sid)
 
 #Catches other event that was not already caught
 @sio.on('*')
@@ -200,3 +200,4 @@ if __name__ == "__main__":
     sio.connect('http://' + ip_address + ':' + port)
     sio.emit('C2_AUTHORIZATION', sio.sid)
     print("CS2 UP")
+    initiate_RTMP_from_file(sio.sid)
