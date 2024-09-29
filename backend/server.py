@@ -142,15 +142,8 @@ RTMP_URL = "rtmp://162.243.166.134:1935/live/test" #I think extra configs needed
 mapping = {} #Stores encodings
 
 storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
-<<<<<<< Updated upstream
 recent_faces = [] #dict of captures and their time made in the last storage_refresh_minutes
 recent_emotions = {} #dict of emotions recognized in the last storage_refresh_minutes
-=======
-recent_faces_keys = [] #dict of captures and their time made in the last storage_refresh_minutes
-recent_faces_values = []
-recent_emotions_keys = [] #dict of emotions recognized in the last storage_refresh_minutes
-recent_emotions_values = []
->>>>>>> Stashed changes
 
 cap = cv2.VideoCapture(RTMP_URL)
 
@@ -161,7 +154,7 @@ def play_tone(face_encoding):
     sio.emit('play_tone', {'face_encoding': face_encoding})
 
 def play_emotion(emotion):
-    sio.emit('play_tone', {'emotion': emotion})
+    sio.emit('play_emotion', {'emotion': emotion})
 
 def check_if_in_mapping(face_encoding):
     for key in mapping:
@@ -224,26 +217,11 @@ def caputure_from_video():
             mapping[tuple(face_encoding)] = name
             
           #If tone was not played recenrly for this face, play it
-<<<<<<< Updated upstream
           if tuple_face_encoding not in recent_faces:
             play_tone(face_encoding)
 
           #Record that the tone has been played
           recent_faces[tuple_face_encoding] = time.time()
-=======
-          if face_encoding not in recent_faces_keys:
-            play_tone(face_encoding)
-
-          #Record that the tone has been played
-          if face_encoding in recent_faces_keys:
-             index = recent_faces_keys.index(face_encoding)
-             recent_faces_values[index] = 
-            pass
-          else:
-             recent_faces_keys.append(face_encoding)
-             recent_faces_values.append(time.time())
-#          recent_faces[face_encoding_keys] = time.time()
->>>>>>> Stashed changes
                
         #Emotion Detection With DeepFace
         data = im.fromarray(frame)
