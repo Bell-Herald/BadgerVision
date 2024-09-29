@@ -3,18 +3,12 @@ import socketio
 import eventlet
 import json
 import time
-import jwt
 import session_backend
 import cv2
 from deepface import DeepFace
 import face_recognition
 from PIL import Image as im
 import time
-import qrcode
-import base64
-import io
-import os
-import pinata
 import numpy as np
 
 
@@ -25,13 +19,9 @@ sio = socketio.Server(cors_allowed_origins='*')  # Allow requests from any origi
 # wrap with a WSGI application
 app = socketio.WSGIApp(sio)
 
-PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI1NjBhZTI4MC1lOWUyLTQ2YzctYjczZS1hOTc4MWY5ZjBkZjUiLCJlbWFpbCI6Im1heC5zLm1hZWRlckBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiNTMyZjRkM2M5MDYzYTEzNjM2MWMiLCJzY29wZWRLZXlTZWNyZXQiOiJlMjM5YWYxMzNiMzNhMWU0ZjVmNDkyYjgzMGM3YjlkZmZlODQwNTk3MTM4OGFlZDY2YWYyZGM2N2E1MmMxNGMzIiwiZXhwIjoxNzU5MTEzNzAyfQ.D8hJHBL4KFHEqdg8_eO88v9RTn38X_WtC9970_STF84"
-pinata_config = {
-    "pinataJwt": PINATA_JWT,  # Replace with your actual Pinata JWT
-}
-
 ###Listen to events
 
+<<<<<<< HEAD
 def upload_file_to_pinata(file_path):
     try:
         # Call the upload_file function we defined earlier
@@ -54,40 +44,6 @@ def upload_file_to_pinata(file_path):
             os.remove(file_path)
             print(f"Test file '{file_path}' has been deleted.")
 
-
-#Catches custom eventpip install --upgrade setuptools
-@sio.on('chat-to-server-message')
-def chat_to_server_event(sid, data):
-    print("EVENT: chat_to_server_event | ID:", sid, "| DATA:", data)
-    sio.emit('my event', {'data': 'foobar'})
-
-@sio.on('update_livestream')
-def update_livestream_event(sid, data):
-    session_id = data.get('session_id')
-    stream_url = data.get('stream_url')
-    stream_key = data.get('stream_key')
-    page_url = data.get('page_url')
-
-    if session_id and stream_url and stream_key and page_url:
-        session_backend.update_livestream(session_id, stream_url, stream_key, page_url)
-        sio.emit('livestream_updated', {'session_id': session_id})
-    else:
-        sio.emit('livestream_update_failed', {'error': 'Missing required fields'})
-
-# Catch event to start live stream
-@sio.on('start_livestream')
-def start_livestream_event(sid, data):
-    session_id = data.get('session_id')
-    stream_url = data.get('stream_url')
-    stream_key = data.get('stream_key')
-    page_url = data.get('page_url')
-
-    if session_id and stream_url and stream_key and page_url:
-        session_backend.update_livestream_status(session_id, stream_url, stream_key, page_url)
-        sio.emit('livestream_started', {'session_id': session_id})
-    else:
-        sio.emit('livestream_start_failed', {'error': 'Missing required fields'})
-
 #Catches connect
 @sio.event
 def connect(sid, environ, auth):
@@ -109,7 +65,7 @@ def connect(sid, environ, auth):
         'iat': iat,
         'exp': exp,
     }
-    token = session_backend.create_jwt(session_name=session_name)
+    token = jwt.encode(payload, ZOOM_SDK_SECRET, algorithm='HS256')
 
     data = {
         "session_name": session_name,
@@ -144,6 +100,14 @@ def connect(sid, environ, auth):
         'session_name': session_name,
         'session_id': session_id,
     })
+=======
+
+#Catches custom eventpip install --upgrade setuptools
+@sio.on('chat-to-server-message')
+def chat_to_server_event(sid, data):
+    print("EVENT: chat_to_server_event | ID:", sid, "| DATA:", data)
+    sio.emit('my event', {'data': 'foobar'})
+>>>>>>> 6b19672d596f8cbce3182c7088df9412b2727b0c
 
 #Catches disconnect
 @sio.event
@@ -189,7 +153,7 @@ def play_tone(face_encoding):
     sio.emit('play_tone', {'face_encoding': face_encoding})
 
 def play_emotion(emotion):
-    sio.emit('play_tone', {'emotion': emotion})
+    sio.emit('play_emotion', {'emotion': emotion})
 
 def check_if_in_mapping(face_encoding):
     for key in mapping:
@@ -210,12 +174,33 @@ def caputure_from_video():
       ret, frame = cap.read()
 
       #Delete old values from recent_faces and recent_captures
+<<<<<<< HEAD
+      new_recent_faces_keys = []
+      new_recent_facse_values = []
+      for recent_face_key, recent_face_value in zip(recent_faces_keys, recent_faces_values):
+        if time.time + storage_refresh_minutes - recent_face_value > 0:
+            new_recent_faces_keys.append(recent_face_key)
+            new_recent_facse_values.append(recent_face_value)
+      recent_faces_keys = new_recent_faces_keys
+      recent_faces_values = new_recent_facse_values
+
+
+      new_recent_emotions_keys = []
+      new_recent_facse_values = []
+      for recent_emotion_key, recent_emotion_value in zip(recent_emotions_keys, recent_emotions_values):
+        if time.time + storage_refresh_minutes - recent_emotion_value > 0:
+            new_recent_emotions_keys.append(recent_emotion_key)
+            new_recent_facse_values.append(recent_emotion_value)
+      recent_emotions_keys = new_recent_emotions_keys
+      recent_emotions_values = new_recent_facse_values
+=======
       for recent_face in list(recent_faces.keys()):
         if time.time() + storage_refresh_minutes - recent_faces[recent_face] <= 0:
            del recent_faces[recent_face]
       for recent_emotion in list(recent_emotions.keys()):
         if time.time() + storage_refresh_minutes - recent_emotions[recent_emotion] <= 0:
            del recent_emotions[recent_emotion]
+>>>>>>> 6b19672d596f8cbce3182c7088df9412b2727b0c
 
       #Skip frames until frame_skips is reached
       if ret and (frame_count % frame_skips == 0):

@@ -114,7 +114,7 @@ const VideoCall = ({ zoomSessionName, zoomJwt }: VideoCallProps) => {
       {!inSession ? (
         <Button onClick={joinSession}>Start Identification</Button>
       ) : (
-        <Group mt="lg">
+        <Group mt="lg" justify="center">
           <ActionIcon variant="filled" size="xl" onClick={leaveSession}>
             <PhoneOff />
           </ActionIcon>
