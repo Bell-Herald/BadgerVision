@@ -57,25 +57,22 @@ def connect(sid, environ, auth):
     # Get unique session name through date and time
     session_id, session_name = session_backend.create_session()
 
-    #TODO: Initializae zoom_Jwt
-
-
+    # https://developers.zoom.us/docs/video-sdk/auth/#how-to-generate-a-video-sdk-jwt
     ZOOM_SDK_KEY = 'YLfqZ1zkO5UCcVBhuqKcYzXUZunSp5ZbKg3q'
     ZOOM_SDK_SECRET = 'oYO7shH2XAk6X8hllehPI3VX74k45676Fl4t'
     iat = int(time.time())
     exp = iat + 60 * 5  # Signature expires in 5 minutes
     payload = {
-        'sdkKey': ZOOM_SDK_KEY,
-        'mn': '',  # Session name/meeting number
-        'role': 1,  # Host role
+        'app_key': ZOOM_SDK_KEY,
+        'role_type': 1,
+        'tpc': session_name,
+        'version': 1,
         'iat': iat,
         'exp': exp,
-        'appKey': ZOOM_SDK_KEY,
-        'tokenExp': exp
     }
     token = jwt.encode(payload, ZOOM_SDK_SECRET, algorithm='HS256')
 
-    sio.emit('zoom_initialization', {'token':token,'session_name': session_name, 'session_id': session_id})
+    sio.emit('zoom_initialization', {'token':token,'session_name': session_name,'session_id': session_id})
 
 #Catches disconnect
 @sio.event
@@ -111,7 +108,7 @@ def any_event(event, sid, data):
      pass
 
 if __name__ == '__main__':
-    eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
+    eventlet.wsgi.server(eventlet.listen(('', 5001)), app)
 
 
 """

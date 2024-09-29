@@ -33,11 +33,6 @@ def create_session():
         print("Session Name:", session_info.get("session_name"))
         print("Created At:", session_info.get("created_at"))
         session_id = session_info.get("session_id")
-
-        # Write session info to a file for later use
-#        with open("session_info.txt", "w") as file:
-#            file.write(session_id + "\n")
-#            file.write(session_name)
         
         return session_id, session_name  # Return session details if needed
     else:
@@ -102,5 +97,3 @@ def update_livestream_status(session_id, stream_url, stream_key, page_url):
 
 if __name__ == "__main__":
     session_id, session_name = create_session()
-    # update_livestream(session_id, "rtmp://live.twitch.tv/app", "stream_key", "https://www.twitch.tv/")
-    # update_livestream_status(session_id, "rtmp://live.twitch.tv/app", "stream_key", "https://www.twitch.tv/")
