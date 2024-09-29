@@ -142,8 +142,15 @@ RTMP_URL = "rtmp://162.243.166.134:1935/live/test" #I think extra configs needed
 mapping = {} #Stores encodings
 
 storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
+<<<<<<< Updated upstream
 recent_faces = [] #dict of captures and their time made in the last storage_refresh_minutes
 recent_emotions = {} #dict of emotions recognized in the last storage_refresh_minutes
+=======
+recent_faces_keys = [] #dict of captures and their time made in the last storage_refresh_minutes
+recent_faces_values = []
+recent_emotions_keys = [] #dict of emotions recognized in the last storage_refresh_minutes
+recent_emotions_values = []
+>>>>>>> Stashed changes
 
 cap = cv2.VideoCapture(RTMP_URL)
 
@@ -174,12 +181,24 @@ def caputure_from_video():
       ret, frame = cap.read()
 
       #Delete old values from recent_faces and recent_captures
-      for recent_face in list(recent_faces.keys()):
-        if time.time + storage_refresh_minutes - recent_faces[recent_face] <= 0:
-           del recent_faces[recent_face]
-      for recent_emotion in list(recent_emotions.keys()):
-        if time.time + storage_refresh_minutes - recent_emotions[recent_emotion] <= 0:
-           del recent_emotions[recent_emotion]
+      new_recent_faces_keys = []
+      new_recent_facse_values = []
+      for recent_face_key, recent_face_value in zip(recent_faces_keys, recent_faces_values):
+        if time.time + storage_refresh_minutes - recent_face_value > 0:
+            new_recent_faces_keys.append(recent_face_key)
+            new_recent_facse_values.append(recent_face_value)
+      recent_faces_keys = new_recent_faces_keys
+      recent_faces_values = new_recent_facse_values
+
+
+      new_recent_emotions_keys = []
+      new_recent_facse_values = []
+      for recent_emotion_key, recent_emotion_value in zip(recent_emotions_keys, recent_emotions_values):
+        if time.time + storage_refresh_minutes - recent_emotion_value > 0:
+            new_recent_emotions_keys.append(recent_emotion_key)
+            new_recent_facse_values.append(recent_emotion_value)
+      recent_emotions_keys = new_recent_emotions_keys
+      recent_emotions_values = new_recent_facse_values
 
       #Skip frames until frame_skips is reached
       if ret and (frame_count % frame_skips == 0):
@@ -205,11 +224,26 @@ def caputure_from_video():
             mapping[tuple(face_encoding)] = name
             
           #If tone was not played recenrly for this face, play it
+<<<<<<< Updated upstream
           if tuple_face_encoding not in recent_faces:
             play_tone(face_encoding)
 
           #Record that the tone has been played
           recent_faces[tuple_face_encoding] = time.time()
+=======
+          if face_encoding not in recent_faces_keys:
+            play_tone(face_encoding)
+
+          #Record that the tone has been played
+          if face_encoding in recent_faces_keys:
+             index = recent_faces_keys.index(face_encoding)
+             recent_faces_values[index] = 
+            pass
+          else:
+             recent_faces_keys.append(face_encoding)
+             recent_faces_values.append(time.time())
+#          recent_faces[face_encoding_keys] = time.time()
+>>>>>>> Stashed changes
                
         #Emotion Detection With DeepFace
         data = im.fromarray(frame)
