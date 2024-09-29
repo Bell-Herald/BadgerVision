@@ -4,6 +4,7 @@ import {
   Button,
   Center,
   Flex,
+  Group,
   LoadingOverlay,
   Stack,
   Text,
@@ -13,8 +14,13 @@ import ZoomVideo, {
   VideoPlayer,
   VideoQuality,
 } from "@zoom/videosdk";
-import { PhoneOff } from "lucide-react";
+import { PhoneOff, Share } from "lucide-react";
 import { useRef, useState } from "react";
+import {
+  ZOOM_BROADCAST_URL,
+  ZOOM_STREAM_KEY,
+  ZOOM_STREAM_URL,
+} from "./secrets/zoom";
 
 type VideoCallProps = {
   zoomSessionName: string;
@@ -46,7 +52,17 @@ const VideoCall = ({ zoomSessionName, zoomJwt }: VideoCallProps) => {
       action: "Start",
       userId: client.current.getCurrentUserInfo().userId,
     });
+
     setIsLoading(false);
+  };
+
+  const startLivestream = async () => {
+    const liveStreamClient = client.current.getLiveStreamClient();
+    await liveStreamClient.startLiveStream(
+      ZOOM_STREAM_URL,
+      zoomSessionName,
+      ZOOM_BROADCAST_URL
+    );
   };
 
   const renderVideo = async (event: {
@@ -74,6 +90,8 @@ const VideoCall = ({ zoomSessionName, zoomJwt }: VideoCallProps) => {
         void renderVideo(payload)
     );
     await client.current.leave();
+    const liveStreamClient = client.current.getLiveStreamClient();
+    await liveStreamClient.stopLiveStream();
     setinSession(false);
   };
 
@@ -96,11 +114,14 @@ const VideoCall = ({ zoomSessionName, zoomJwt }: VideoCallProps) => {
       {!inSession ? (
         <Button onClick={joinSession}>Start Identification</Button>
       ) : (
-        <Center mt="lg">
+        <Group mt="lg">
           <ActionIcon variant="filled" size="xl" onClick={leaveSession}>
             <PhoneOff />
           </ActionIcon>
-        </Center>
+          <ActionIcon variant="filled" size="xl" onClick={startLivestream}>
+            <Share />
+          </ActionIcon>
+        </Group>
       )}
     </Box>
   );

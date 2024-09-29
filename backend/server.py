@@ -3,18 +3,13 @@ import socketio
 import eventlet
 import json
 import time
-import jwt
 import session_backend
 import cv2
 from deepface import DeepFace
 import face_recognition
 from PIL import Image as im
 import time
-import qrcode
-import base64
-import io
-import os
-import pinata
+import numpy as np
 
 
 ###Initialize server
@@ -24,13 +19,9 @@ sio = socketio.Server(cors_allowed_origins='*')  # Allow requests from any origi
 # wrap with a WSGI application
 app = socketio.WSGIApp(sio)
 
-PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI1NjBhZTI4MC1lOWUyLTQ2YzctYjczZS1hOTc4MWY5ZjBkZjUiLCJlbWFpbCI6Im1heC5zLm1hZWRlckBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiNTMyZjRkM2M5MDYzYTEzNjM2MWMiLCJzY29wZWRLZXlTZWNyZXQiOiJlMjM5YWYxMzNiMzNhMWU0ZjVmNDkyYjgzMGM3YjlkZmZlODQwNTk3MTM4OGFlZDY2YWYyZGM2N2E1MmMxNGMzIiwiZXhwIjoxNzU5MTEzNzAyfQ.D8hJHBL4KFHEqdg8_eO88v9RTn38X_WtC9970_STF84"
-pinata_config = {
-    "pinataJwt": PINATA_JWT,  # Replace with your actual Pinata JWT
-}
-
 ###Listen to events
 
+<<<<<<< HEAD
 def upload_file_to_pinata(file_path):
     try:
         # Call the upload_file function we defined earlier
@@ -109,6 +100,14 @@ def connect(sid, environ, auth):
         'session_name': session_name,
         'session_id': session_id,
     })
+=======
+
+#Catches custom eventpip install --upgrade setuptools
+@sio.on('chat-to-server-message')
+def chat_to_server_event(sid, data):
+    print("EVENT: chat_to_server_event | ID:", sid, "| DATA:", data)
+    sio.emit('my event', {'data': 'foobar'})
+>>>>>>> 6b19672d596f8cbce3182c7088df9412b2727b0c
 
 #Catches disconnect
 @sio.event
@@ -142,7 +141,7 @@ RTMP_URL = "rtmp://162.243.166.134:1935/live/test" #I think extra configs needed
 mapping = {} #Stores encodings
 
 storage_refresh_minutes = 1 #number of minutes after which to show embeddings again
-recent_faces = [] #dict of captures and their time made in the last storage_refresh_minutes
+recent_faces = {} #dict of captures and their time made in the last storage_refresh_minutes
 recent_emotions = {} #dict of emotions recognized in the last storage_refresh_minutes
 
 cap = cv2.VideoCapture(RTMP_URL)
@@ -150,7 +149,7 @@ cap = cv2.VideoCapture(RTMP_URL)
 print("got caputre")
 
 def play_tone(face_encoding):
-    print("PLAYing tone:", face_encoding)
+    #print("PLAYing tone:", face_encoding)
     sio.emit('play_tone', {'face_encoding': face_encoding})
 
 def play_emotion(emotion):
@@ -158,7 +157,8 @@ def play_emotion(emotion):
 
 def check_if_in_mapping(face_encoding):
     for key in mapping:
-        result = face_recognition.compare_faces([face_encoding], list(key))
+        face_encoding_array = np.array(face_encoding)
+        result = face_recognition.compare_faces([face_encoding_array], np.array(key))
 
         if result[0]:
             return True
@@ -168,12 +168,13 @@ def check_if_in_mapping(face_encoding):
 def caputure_from_video():
     name = ""#Where is name coming from??
     process_this_frame = 0
-    frame_skips = 10 #Use (1/frame_skips) frames; ex) 1/3 skips 2 of 3 frames
+    frame_skips = 100 #Use (1/frame_skips) frames; ex) 1/3 skips 2 of 3 frames
     frame_count = 0
     while cap.isOpened():  # Untill end of file/error occured
       ret, frame = cap.read()
 
       #Delete old values from recent_faces and recent_captures
+<<<<<<< HEAD
       new_recent_faces_keys = []
       new_recent_facse_values = []
       for recent_face_key, recent_face_value in zip(recent_faces_keys, recent_faces_values):
@@ -192,6 +193,14 @@ def caputure_from_video():
             new_recent_facse_values.append(recent_emotion_value)
       recent_emotions_keys = new_recent_emotions_keys
       recent_emotions_values = new_recent_facse_values
+=======
+      for recent_face in list(recent_faces.keys()):
+        if time.time() + storage_refresh_minutes - recent_faces[recent_face] <= 0:
+           del recent_faces[recent_face]
+      for recent_emotion in list(recent_emotions.keys()):
+        if time.time() + storage_refresh_minutes - recent_emotions[recent_emotion] <= 0:
+           del recent_emotions[recent_emotion]
+>>>>>>> 6b19672d596f8cbce3182c7088df9412b2727b0c
 
       #Skip frames until frame_skips is reached
       if ret and (frame_count % frame_skips == 0):
@@ -214,7 +223,7 @@ def caputure_from_video():
         for face_encoding in face_encodings:
           tuple_face_encoding = tuple(face_encoding)
           if not check_if_in_mapping(face_encoding):
-            mapping[tuple(face_encoding)] = name
+            mapping[tuple_face_encoding] = name
             
           #If tone was not played recenrly for this face, play it
           if tuple_face_encoding not in recent_faces:
@@ -227,22 +236,23 @@ def caputure_from_video():
         data = im.fromarray(frame)
         data.save("image_for_deepface.jpg")
 
-        try:
-            emotion_analysis = DeepFace.analyze(
-            img_path = "image_for_deepface.jpg",
-            actions = ['emotion'],
-            )
+        # try:
+        emotion_analysis = DeepFace.analyze(
+        img_path = "image_for_deepface.jpg",
+        actions = ['emotion'],
+        enforce_detection = False
+        )
 
-            #Play emotion if it was not recently played
-            if(emotion_analysis.dominant_emotion not in recent_emotions):
-               play_emotion(emotion_analysis.dominant_emotion)
+        #Play emotion if it was not recently played
+        if(emotion_analysis[0]['dominant_emotion'] not in recent_emotions):
+            play_emotion(emotion_analysis[0]['dominant_emotion'])
 
-            #Update that the emotion was played recently
-            recent_emotions[emotion_analysis.dominant_emotion] = time.time()
+        #Update that the emotion was played recently
+        recent_emotions[emotion_analysis[0]['dominant_emotion']] = time.time()
 
-            print("DeepFace Analysis", emotion_analysis)
-        except:
-           print("Deepface failed")
+        print("DeepFace Analysis", emotion_analysis[0]['dominant_emotion'])
+        # except:
+        #    print("Deepface failed")
 
       frame_count +=1            
     
@@ -251,9 +261,9 @@ def caputure_from_video():
 
 if __name__ == "__main__":
     print("STEP 1")
-    eventlet.wsgi.server(eventlet.listen(('', 4000)), app)
-    print("STEP 2")
     caputure_from_video()
+    print("STEP 2")
+    eventlet.wsgi.server(eventlet.listen(('', 4000)), app)
     print("Server started")
 
 ###Listen to events
