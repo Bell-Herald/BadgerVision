@@ -1,4 +1,4 @@
-# We won at Hack Midwest!
+# With Badger Vision, We won at Hack Midwest!
 
 ## The Competition: Hack Midwest
 Hack Midwest is the largest hackathon in the region, attracting top talent from across the country. Over 300 developers were selected to compete, including experts from leading organizations and universities.
